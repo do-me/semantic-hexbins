@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- load all packages -->
+    <link rel="apple-touch-icon" sizes="180x180" href="static/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="static/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="static/favicon/favicon-16x16.png">
+    <link rel="manifest" href="static/favicon/site.webmanifest">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="static/assets/leaflet/leaflet.css">
+    <script src="static/assets/leaflet/leaflet.js"></script>
+    <script src="static/assets/leaflet.ajax.min.js"></script>
+    <script src="static/assets/jquery.min.js"></script>
+    <link rel="stylesheet" href="static/assets/control_geocoder/Control.Geocoder.css" />
+    <script src="static/assets/control_geocoder/Control.Geocoder.js"></script>
+    <link rel="stylesheet" href="static/assets/leaflet_measure/Leaflet.PolylineMeasure.css" />
+    <script src="static/assets/leaflet_measure/Leaflet.PolylineMeasure.js"></script>
+    <link rel="stylesheet" href="static/assets/visual_click/L.VisualClick.css" />
+    <script src="static/assets/visual_click/L.VisualClick.js"></script>
+    <script src="static/assets/d3-hexbin.v0.2.min.js"></script>
+    <script src="static/assets/leaflet-d3.js" charset="utf-8"></script>
+    <script src="static/assets/popper.min.js" charset="utf-8"></script>
+    <script src="static/assets/leaflet_fullscreen/leaflet.fullscreen.min.js"></script>
+    <link href="static/assets/leaflet_fullscreen/leaflet.fullscreen.css" rel="stylesheet" />
+    <link rel="stylesheet" href="static/assets/main.css" />
+    <script src="static/assets/main.js"></script>
+    <link rel="stylesheet" href="static/assets/font-awesome/css/all.css" />
+    <link rel="stylesheet" href="static/assets/BigImage/Leaflet.BigImage.min.css">
+    <script src="static/assets/BigImage/Leaflet.BigImage.min.js"></script>
+    <script src="static/assets/papaparse.min.js"></script>
+    <script src="static/assets/bootstrap/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="static/assets/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="static/assets/font-awesome/all.min.css" />
+
+    <script src="static/assets/d3.v5.min.js" charset="utf-8"></script>
+    <script src="static/assets/d3-hexbin.v0.2.min.js"></script>
+    <script src="static/assets/leaflet-d3.js" charset="utf-8"></script>
+    <script src="static/assets/simple-statistics-7-8-3.min.js" charset="utf-8"></script>
+    <script src="static/assets/pako.min.js" charset="utf-8"></script>
+
+    <script type="module" src="static/assets/transformers.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Semantic hexagonal on-the-fly binning metrics for city-scale georeferenced social media data</title>
+
+</head>
+
+<body>
+    <script src="static/assets/bootstrap/bootstrap.bundle.min.js"></script>
+    <div id="map">
+        <div id="spinner"></div>
+    </div>
+
+    <button id="toggle_sidebar_button" class="btn btn-primary" type="button" data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling"><i
+            class="fa fa-chevron-right fa-xl"></i></button>
+
+    <div class="offcanvas offcanvas-start show" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1"
+        id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel" data-bs-theme="dark">
+        <div class="offcanvas-header">
+            <h4 class="offcanvas-title" id="offcanvasScrollingLabel">Semantic Hexbins</h4>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <details open="">
+                <summary>Info</summary>
+                <p>Demo app for the paper: yet to be published.</p>
+                <p>Paper Authors: 
+                    <a href="https://geo.rocks/about/">Dominik Weckmüller</a>,
+                    <a href="https://www.alexanderdunkel.com/">Alexander Dunkel</a>,
+                    <a href="https://tu-dresden.de/bu/umwelt/geo/ifk/das-institut/beschaeftigte/dirk-burghardt">Dirk Burghardt</a>. 
+                    App Author: <a href="https://geo.rocks/about/">Dominik Weckmüller</a>.
+                </p>
+                <p>A lightweight frontend app showcasing the use of semantic similarity for geospatial applications such as geosocial media.</p>
+                <p>More details in the paper or on <a href="https://github.com/do-me/semantic-hexbins">GitHub</a></p>
+            </details>
+            <details>
+                <summary>Supported query languages (116)</summary>
+                Languages <a href="https://huggingface.co/intfloat/multilingual-e5-small" target="_blank">multilingual-e5-small</a> (and <a href="https://huggingface.co/microsoft/Multilingual-MiniLM-L12-H384">microsoft/Multilingual-MiniLM-L12-H384</a> as its base model) was trained on. Source <a href="https://data.statmt.org/cc-100/" target="_blank">here</a>. The larger the amount of training data, the better the language should work.<br><hr>
+                af Afrikaans (305M)<br>am Amharic (133M)<br>ar Arabic (5.4G)<br>as Assamese (7.6M)<br>az Azerbaijani (1.3G)<br>be Belarusian (692M)<br>bg Bulgarian (9.3G)<br>bn Bengali (860M)<br>bn_rom Bengali Romanized (164M)<br>br Breton (21M)<br>bs Bosnian (18M)<br>ca Catalan (2.4G)<br>cs Czech (4.4G)<br>cy Welsh (179M)<br>da Danish (12G)<br>de German (18G)<br>el Greek (7.4G)<br>en English (82G)<br>eo Esperanto (250M)<br>es Spanish (14G)<br>et Estonian (1.7G)<br>eu Basque (488M)<br>fa Persian (20G)<br>ff Fulah (3.1M)<br>fi Finnish (15G)<br>fr French (14G)<br>fy Frisian (38M)<br>ga Irish (108M)<br>gd Scottish Gaelic (22M)<br>gl Galician (708M)<br>gn Guarani (1.5M)<br>gu Gujarati (242M)<br>ha Hausa (61M)<br>he Hebrew (6.1G)<br>hi Hindi (2.5G)<br>hi_rom Hindi Romanized (129M)<br>hr Croatian (5.7G)<br>ht Haitian (9.1M)<br>hu Hungarian (15G)<br>hy Armenian (776M)<br>id Indonesian (36G)<br>ig Igbo (6.6M)<br>is Icelandic (779M)<br>it Italian (7.8G)<br>ja Japanese (15G)<br>jv Javanese (37M)<br>ka Georgian (1.1G)<br>kk Kazakh (889M)<br>km Khmer (153M)<br>kn Kannada (360M)<br>ko Korean (14G)<br>ku Kurdish (90M)<br>ky Kyrgyz (173M)<br>la Latin (609M)<br>lg Ganda (7.3M)<br>li Limburgish (2.2M)<br>ln Lingala (2.3M)<br>lo Lao (63M)<br>lt Lithuanian (3.4G)<br>lv Latvian (2.1G)<br>mg Malagasy (29M)<br>mk Macedonian (706M)<br>ml Malayalam (831M)<br>mn Mongolian (397M)<br>mr Marathi (334M)<br>ms Malay (2.1G)<br>my Burmese (46M)<br>my_zaw Burmese (Zawgyi) (178M)<br>ne Nepali (393M)<br>nl Dutch (7.9G)<br>no Norwegian (13G)<br>ns Northern Sotho (1.8M)<br>om Oromo (11M)<br>or Oriya (56M)<br>pa Punjabi (90M)<br>pl Polish (12G)<br>ps Pashto (107M)<br>pt Portuguese (13G)<br>qu Quechua (1.5M)<br>rm Romansh (4.8M)<br>ro Romanian (16G)<br>ru Russian (46G)<br>sa Sanskrit (44M)<br>si Sinhala (452M)<br>sc Sardinian (143K)<br>sd Sindhi (67M)<br>sk Slovak (6.1G)<br>sl Slovenian (2.8G)<br>so Somali (78M)<br>sq Albanian (1.3G)<br>sr Serbian (1.5G)<br>ss Swati (86K)<br>su Sundanese (15M)<br>sv Swedish (21G)<br>sw Swahili (332M)<br>ta Tamil (1.3G)<br>ta_rom Tamil Romanized (68M)<br>te Telugu (536M)<br>te_rom Telugu Romanized (79M)<br>th Thai (8.7G)<br>tl Tagalog (701M)<br>tn Tswana (8.0M)<br>tr Turkish (5.4G)<br>ug Uyghur (46M)<br>uk Ukrainian (14G)<br>ur Urdu (884M)<br>ur_rom Urdu Romanized (141M)<br>uz Uzbek (155M)<br>vi Vietnamese (28G)<br>wo Wolof (3.6M)<br>xh Xhosa (25M)<br>yi Yiddish (51M)<br>yo Yoruba (1.1M)<br>zh-Hans Chinese (Simplified) (14G)<br>zh-Hant Chinese (Traditional) (5.3G)<br>zu Zulu (4.3M)
+            </details>
+            <br>
+
+            <h5><label for="dataFile" data-toggle="tooltip"
+                title="Select an input file, either individual posts or aggregated mean location files.">Input data</label>
+            </h5>
+            <select id="dataFile" class="form-select" aria-label="Default select example">
+                <option selected value="10_000_rows_e5_multilingual_small__4_dec.json.gz">10.000 random individual posts (10Mb)</option>
+                <option value="20_000_rows_e5_multilingual_small__4_dec.json.gz">20.000 random individual posts (20Mb)</option>
+                <option value="40_000_rows_e5_multilingual_small__4_dec.json.gz">40.000 random individual posts (40Mb)</option>
+                <option value="6630_rows_e5_multilingual_small_mean_location.json.gz">693.959 aggregated posts, mean vector for 6630 locations (13Mb)</option>
+            </select>
+    
+            <br>
+
+            <h5><label for="queryText" data-toggle="tooltip"
+                    title="Semantically query anything in more than 116 languages, like basketball, Χαλάρωση, ciorba, fodbold, Beethoven, Natur, 樱花, ristorante italiano or vin rouge. This is not full-text search but exclusively relying on semantic similarity.">Query (semantic similarity) <a href=""></a></label>
+            </h5>
+            <textarea class="form-control" id="queryText" rows="1">Cherry blossom</textarea>
+            <br>
+            <div style="display: none;">
+                <h5><label for="vizmode" data-toggle="tooltip"
+                        title="Toggle between different visualization modes.">Visualization Mode</label></h5>
+                <select class="form-select" aria-label="Default select example" id="vizmode">
+                    <option value="posts_hex_abs">Absolute</option>
+                    <option value="posts_hex_rel">Relative (Pureness)</option>
+                    <option value="posts_hex_chi">Signed Chi (X Statistical Significance)</option>
+                </select>
+                <br>
+            </div>
+
+            <div id="radiusSettings">
+                <h5><label for="radiusRadioButtons" data-toggle="tooltip"
+                        title="Toggle between a fixed radius (default) and a radius size growing with the absolute number topic posts in the hexbin.">Radius</label>
+                </h5>
+                <div id="radiusRadioButtons">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="radiusRadio" id="fixedRadius"
+                            value="fixedRadius" checked>
+                        <label class="form-check-label" for="fixedRadius">
+                            Fixed
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="radiusRadio" id="postsMatchRadius"
+                            value="postsMatchRadius">
+                        <label class="form-check-label" for="postsMatchRadius">
+                            Posts above minimum similarity score
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="radiusRadio" id="totalPosts"
+                            value="totalPosts">
+                        <label class="form-check-label" for="totalPosts">
+                            All posts
+                        </label>
+                    </div>
+                </div>
+                <br>
+            </div>
+
+            <div id="colorScaleSlider" data-role="rangeslider">
+                <div class="d-flex">
+                    <h5><label for="margin" class="d-inline-block" data-toggle="tooltip"
+                            title="Sets the color scale extent, i.e. for this range, the colors are equally distributed. Important as different models have different default ranges.">Color
+                            scale extent</label></h5>
+                </div>
+
+                <h6>Lower bounds (default: median)</h6>
+                <div class="d-flex">
+                    <input type="number" class="form-control" id="minScale" min="0.5" max="1" step="0.01" value="0.8">
+                    <input type="range" class="form-control-range" id="minScaleRange" min="0.5" max="1" step="0.01"
+                        value="0.8">
+                </div>
+
+                <h6>Upper bounds (default: max)</h6>
+                <div class="d-flex">
+                    <input type="number" class="form-control" id="maxScale" min="0.5" max="1" step="0.01" value="0.89">
+                    <input type="range" class="form-control-range" id="maxScaleRange" min="0.5" max="1" step="0.01"
+                        value="0.89">
+                </div>
+
+                <br>
+            </div>
+
+            <div class="d-flex">
+                <h5><label for="margin" class="d-inline-block" data-toggle="tooltip"
+                        title="Move the slider to the right to see most extreme posts that are much above median.">
+                        Minimum similarity score</label></h5>
+            </div>
+            <div class="d-flex">
+                <input type="number" class="form-control" id="minScore" min="0" max="1" step="0.01" value="0">
+                <input type="range" class="form-control-range" id="minScoreRange" min="0" max="1" step="0.01" value="0">
+            </div>
+
+            <div class="d-flex">
+                <h5><label for="margin" class="d-inline-block" data-toggle="tooltip"
+                        title="Move the slider to the right to see only hexbins with lots of related posts.">
+                        Minimum number of above scores in hexbin</label></h5>
+            </div>
+            <div class="d-flex">
+                <input type="number" class="form-control" id="minScoreQuantity" min="1" max="40000" step="1" value="3">
+                <input type="range" class="form-control-range" id="minScoreQuantityRange" min="1" max="40000" step="1"
+                    value="3">
+            </div>
+            <br>
+
+            <button type="button" id="queryData" class="btn btn-primary" disabled>Submit</button>
+            <br>
+            <br>
+            <h5><label data-toggle="tooltip" title="Instagram Locations in last-hovered hexbin">Instagram
+                    Locations</label></h5>
+            <div id="locations"></div>
+
+
+        </div>
+    </div>
+
+</body>
+
+</html>
