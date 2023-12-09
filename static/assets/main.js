@@ -302,22 +302,38 @@ $(document).ready(function () {
     }
 
     function updateRadius() {
+
         if (currentRadiusMode == "postsMatchRadius") {
             hexLayer.radiusValue(function (d) {
                 const aboveThreshold = d.filter(obj => obj["o"]["score"] >= minScore);
-                return aboveThreshold.length;
+
+                let aboveThresholdSumCounts = 0
+                if (mean_location_variant) {
+                    aboveThresholdSumCounts = aboveThreshold.reduce((sum, obj) => sum + obj["o"]["count"], 0);
+                }
+                else {
+                    aboveThresholdSumCounts = aboveThreshold.length;
+                }
+                return aboveThresholdSumCounts;
             });
         }
 
         else if (currentRadiusMode == "totalPosts") {
             hexLayer.radiusValue(function (d) {
-                return d.length;
+                let SumCounts = 0
+                if (mean_location_variant) {
+                    SumCounts = d.reduce((sum, obj) => sum + obj["o"]["count"], 0);
+                }
+                else {
+                    SumCounts = d.length;
+                }
+                return SumCounts;
             });
         }
         else {
-            hexLayer.radiusValue(function (d) { return 12; });
+            hexLayer.radiusValue(function (d) { return 12; }); // normal radius max value, all bins equal and adjacent
         }
-        hexLayer.redraw()
+        hexLayer.redraw();
     }
 
     window.remove_layer = function (layr) {
