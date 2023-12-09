@@ -164,7 +164,8 @@ $(document).ready(function () {
 
     async function computeQueryEmbedding() {
         let inputQuery = $("#queryText").val()
-        queryEmbedding = await pipe(inputQuery, { pooling: 'mean', normalize: false });
+        // https://huggingface.co/intfloat/multilingual-e5-small#faq needs "query: " for better performance
+        queryEmbedding = await pipe("query: " + inputQuery, { pooling: 'mean', normalize: false });
 
         queryEmbedding = Array.from(queryEmbedding["data"]);
 
