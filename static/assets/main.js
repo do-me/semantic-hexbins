@@ -18,8 +18,8 @@ var CSV;
 var currentQueryEmbedding;
 var pipe;
 var queryEmbedding;
-var minScore = 0;
-var minScoreQuantity = 0;
+var minScore = 0.7;
+var minScoreQuantity = 3;
 
 // colorbrewer2 palettes, blues and greens, single hue 
 // https://colorbrewer2.org/#type=sequential&scheme=Blues&n=7 | https://colorbrewer2.org/#type=sequential&scheme=Greens&n=7
@@ -92,13 +92,25 @@ $(document).ready(function () {
         });
     }
 
+    // exclude Bonn location only
+    const excludeIds = ["107481562"];
+    // exclude Bonn location and city district locations
+    // const excludeIds = ['107481562', '1007444547', '242136127', '228014686', '50635685', '100605904743228', '1006643179', '225430184', '304664400', '933806480'];
+
     async function loadRemoteGzippedJSON(url) {
         const response = await fetch(url);
         const buffer = await response.arrayBuffer();
         const data = new Uint8Array(buffer);
         const inflated = pako.inflate(data, { to: 'string' });
         const json = JSON.parse(inflated);
-        currentCSV = json
+
+        // Filter locations based on the provided ids
+        const filteredLocations = json.filter(entry => {
+            const locationId = entry["node.location_id"];
+            return !excludeIds.includes(locationId);
+        });
+
+        currentCSV = filteredLocations
         return json;
     }
 
@@ -218,17 +230,16 @@ $(document).ready(function () {
                 aboveThresholdSumCounts = aboveThreshold.length //reduce((sum, obj) => sum + obj["o"]["count"], 0);
             }
 
-
+            //console.log(aboveThresholdSumCounts, minScoreQuantity)
             if (aboveThresholdSumCounts >= minScoreQuantity) {
                 // Find the maximum score
                 const maxScore = aboveThreshold.reduce((max, obj) => Math.max(max, obj["o"]["score"]), 0);
+                //console.log(maxScore)
                 return maxScore;
             } else {
                 return 0; // 0 -> white, null -> transparent
             }
         });
-
-
 
         hexLayer.redraw()
     }
@@ -373,32 +384,32 @@ $(document).ready(function () {
     //////////////////////////////////////////////////////////
     $("#maxScaleRange").on("input", function () {
         $("#maxScale").val($("#maxScaleRange").val());
-        minScore = parseFloat($("#minScale").val());
-        maxScore = parseFloat($("#maxScale").val());
-        update_color_scale_extent(minScore, maxScore)
+        SminScore = parseFloat($("#minScale").val());
+        SmaxScore = parseFloat($("#maxScale").val());
+        update_color_scale_extent(SminScore, SmaxScore)
     });
 
     $("#maxScale").on("change", function () {
-        minScore = parseFloat($("#minScale").val());
-        maxScore = parseFloat($("#maxScale").val());
-        $("#maxScaleRange").val(maxScore);
-        update_color_scale_extent(minScore, maxScore)
+        SminScore = parseFloat($("#minScale").val());
+        SmaxScore = parseFloat($("#maxScale").val());
+        $("#maxScaleRange").val(SmaxScore);
+        update_color_scale_extent(SminScore, SmaxScore)
     });
 
     //////////////////////////////////////////////////////////
 
     $("#minScaleRange").on("input", function () {
         $("#minScale").val($("#minScaleRange").val());
-        minScore = parseFloat($("#minScale").val());
-        maxScore = parseFloat($("#maxScale").val());
-        update_color_scale_extent(minScore, maxScore)
+        SminScore = parseFloat($("#minScale").val());
+        SmaxScore = parseFloat($("#maxScale").val());
+        update_color_scale_extent(SminScore, SmaxScore)
     });
 
     $("#minScale").on("change", function () {
-        minScore = parseFloat($("#minScale").val());
-        $("#minScaleRange").val(minScore);
-        maxScore = parseFloat($("#maxScale").val());
-        update_color_scale_extent(minScore, maxScore)
+        SminScore = parseFloat($("#minScale").val());
+        $("#minScaleRange").val(SminScore);
+        SmaxScore = parseFloat($("#maxScale").val());
+        update_color_scale_extent(SminScore, SmaxScore)
     });
 
     //////////////////////////////////////////////////////////////

@@ -86,13 +86,19 @@
                 title="Select an input file, either individual posts or aggregated mean location files.">Input data</label>
             </h5>
             <select id="dataFile" class="form-select" aria-label="Default select example">
-                <option selected value="10_000_rows_e5_multilingual_small__4_dec.json.gz">10.000 random individual posts (10Mb)</option>
-                <option value="20_000_rows_e5_multilingual_small__4_dec.json.gz">20.000 random individual posts (20Mb)</option>
+
+                <option disabled="" value="">Aggregated mean locations excerpts</option>
+
+                <option selected="" value="6630_rows_e5_multilingual_small_mean_location.json.gz">693.959 random aggregated posts, mean embedding for 6630 locations (13Mb)</option>
+                <option value="5964_rows_e5_multilingual_small_mean_location_greater_1.json.gz">693.293 random aggregated posts, mean embedding for 5964 locations with &gt;1 posts (12Mb)</option>
+                <option value="4487_rows_e5_multilingual_small_mean_location_greater_9.json.gz">686.558 random aggregated posts, mean embedding for 4487 locations with &gt;9 posts (9Mb)</option>
+                <option value="1028_rows_e5_multilingual_small_mean_location_greater_99.json.gz">542.722 random aggregated posts, mean embedding for 1028 locations with &gt;99 posts (2Mb)</option>
+            
+                <option disabled="" value="">Individual posts excerpts</option>
+                
                 <option value="40_000_rows_e5_multilingual_small__4_dec.json.gz">40.000 random individual posts (40Mb)</option>
-                <option value="6630_rows_e5_multilingual_small_mean_location.json.gz">693.959 random aggregated posts, mean embedding for 6630 locations (13Mb)</option>
-                <option value="5964_rows_e5_multilingual_small_mean_location_greater_1.json.gz">693.293 random aggregated posts, mean embedding for 5964 locations with >1 posts (12Mb)</option>
-                <option value="4487_rows_e5_multilingual_small_mean_location_greater_9.json.gz">686.558 random aggregated posts, mean embedding for 4487 locations with >9 posts (9Mb)</option>
-                <option value="1028_rows_e5_multilingual_small_mean_location_greater_99.json.gz">542.722 random aggregated posts, mean embedding for 1028 locations with >99 posts (2Mb)</option>
+                <option value="20_000_rows_e5_multilingual_small__4_dec.json.gz">20.000 random individual posts (20Mb)</option>
+                <option value="10_000_rows_e5_multilingual_small__4_dec.json.gz">10.000 random individual posts (10Mb)</option>
             </select>
             
     
