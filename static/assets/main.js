@@ -59,12 +59,28 @@ $(document).ready(function () {
         // initialize the map on the "map" div with a given center and zoom
         map = L.map('map', {
             fullscreenControl: true,
-        }).setView(focus_coordinates, zoom_level).addLayer(osm);
+        }).setView(focus_coordinates, zoom_level)
+
+        osm.addTo(map);
+
+        var bm_web_gry = L.maplibreGL({
+            style: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_gry.json',
+        });
+    
+        var bm_web_col = L.maplibreGL({
+            style: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json',
+        });
+
+        layerControl = L.control.layers({
+            "OpenStreetMap": osm, // Add OSM as a base layer option
+            "Basemap Gray": bm_web_gry,
+            "Basemap Color": bm_web_col
+        }).addTo(map);
+    
 
         L.control.scale().addTo(map);
         L.Control.geocoder().addTo(map);
         L.control.polylineMeasure().addTo(map);
-        layerControl = L.control.layers().addTo(map);
         L.control.bigImage().addTo(map);
         $('.leaflet-pm-icon-marker').parent().hide();
         $('.leaflet-pm-icon-circle-marker').parent().hide();
