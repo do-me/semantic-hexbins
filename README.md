@@ -1,6 +1,6 @@
 # Semantic Hexbins
 
-A light-weight demo app for geospatial semantic search. Designed for georeferenced social media data.
+A light-weight demo app for geospatial semantic search. Designed for any kind of textual data with geospatial references.
 Building on previous research:
 
 - [An Application-Oriented Implementation of Hexagonal On-the-fly Binning Metrics for City-Scale Georeferenced Social Media Data](https://isprs-archives.copernicus.org/articles/XLVIII-4-W7-2023/253/2023/)
