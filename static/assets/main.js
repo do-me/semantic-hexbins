@@ -155,6 +155,12 @@ $(document).ready(function () {
             }
             ));
 
+        hexLayer.dispatch()
+            .on('click', function(d, i) {
+                //console.log({ type: 'click', event: d, index: i, context: this });
+                hexagon_click(d);
+            });
+
         updateRadius()
 
         updateColorValueFunction()
@@ -286,18 +292,6 @@ $(document).ready(function () {
         const maxScore = aboveThreshold.reduce((max, obj) => Math.max(max, obj["o"]["score"]), 0);
         /////////////////////////////////////////////////////
 
-        var locations = d.reduce(function (acc, obj) { acc.push(obj["o"]["node.location_id"]); return acc; }, []);
-        locations = [...new Set(locations)]
-
-        let locationsHTML = ""; // initialize result variable as empty string
-
-        for (let i = 0; i < locations.length; i++) {
-            const element = locations[i];
-            const href = `https://www.instagram.com/explore/locations/${element}`; // generate href attribute
-            const link = `<a href="${href}" target="_blank">${element}</a>`; // wrap element in a tag
-            locationsHTML += link + "<br>"; // concatenate link and <br> tag to result
-        }
-
         // plain html version
         var tooltip_text =
             `<table>
@@ -324,9 +318,24 @@ $(document).ready(function () {
         //    Posts: ${String(SumCounts)}<br>
         //    Posts Above Threshold: ${String(aboveThresholdSumCounts)}<br>
         //    Highest Score (Color): ${String(maxScore.toFixed(2))}<br>`
+        return tooltip_text
+    }
+
+    function hexagon_click(d){
+        var locations = d.reduce(function (acc, obj) { acc.push(obj["o"]["node.location_id"]); return acc; }, []);
+        locations = [...new Set(locations)]
+
+        let locationsHTML = ""; // initialize result variable as empty string
+
+        for (let i = 0; i < locations.length; i++) {
+            const element = locations[i];
+            const href = `https://www.instagram.com/explore/locations/${element}`; // generate href attribute
+            const link = `<a href="${href}" target="_blank">${element}</a>`; // wrap element in a tag
+            locationsHTML += link + "<br>"; // concatenate link and <br> tag to result
+        }
 
         $("#locations").html(locationsHTML)
-        return tooltip_text
+
     }
 
     function updateRadius() {
