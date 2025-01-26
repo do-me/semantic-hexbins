@@ -39,6 +39,8 @@
     <script src="static/assets/leaflet-d3.js" charset="utf-8"></script>
     <script src="static/assets/simple-statistics-7-8-3.min.js" charset="utf-8"></script>
     <script src="static/assets/pako.min.js" charset="utf-8"></script>
+    <script src="static/assets/pixioverlay/pixi.min.js" charset="utf-8"></script>
+    <script src="static/assets/pixioverlay/L.PixiOverlay.min.js" charset="utf-8"></script>
     <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.17/leaflet-maplibre-gl.js"></script>
 
     <script type="module" src="static/assets/transformers.js"></script>
@@ -65,7 +67,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-            <details open="">
+            <details>
                 <summary>Info</summary>
                 <p>Demo app for the paper: yet to be published.</p>
                 <p>Paper Authors: anonymized for peer review
@@ -192,9 +194,28 @@
                 <input type="range" class="form-control-range" id="minScoreQuantityRange" min="1" max="1000" step="1"
                     value="3">
             </div>
+            <div id="min_max_mean_median_container" hidden>
+                <h5><label for="dataFile" data-toggle="tooltip"
+                    title="Select binning function for hexbin. Max is most likely what you're looking for as it behaves intuitively. You'll see a wild 'color jumping' across zoom levels if you select other functions here.">Binning function</label>
+                </h5>
+                <label for="min_max_mean_median">Select Statistic:</label>
+                <select id="min_max_mean_median" class="form-select">
+                    <option value="min">Min</option>
+                    <option selected value="max">Max</option>
+                    <option value="mean">Mean</option>
+                    <option value="median">Median</option>
+                    <option value="range">Range</option>
+                    <option value="variance">Variance</option>
+                    <option value="stdDev">Standard Deviation</option>
+                    <option value="cv">Coefficient of Variation</option>
+                    <option value="variance">Variance</option>
+                    <option value="range">Range</option>
+                </select>
+                </div>
             <br>
 
-            <button type="button" id="queryData" class="btn btn-primary" disabled>Submit</button>
+            <button type="button" id="queryData" class="btn btn-primary" disabled>🔎 Submit</button>
+            <button type="button" id="addMarkers" class="btn btn-secondary">📍 Add markers</button>
             <br>
             <br>
             <h5><label data-toggle="tooltip" title="Instagram Locations in last-clicked hexbin">Instagram

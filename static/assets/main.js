@@ -81,7 +81,7 @@ $(document).ready(function () {
         L.control.scale().addTo(map);
         L.Control.geocoder().addTo(map);
         L.control.polylineMeasure().addTo(map);
-        L.control.bigImage().addTo(map);
+        //L.control.bigImage().addTo(map);
         $('.leaflet-pm-icon-marker').parent().hide();
         $('.leaflet-pm-icon-circle-marker').parent().hide();
         $('.leaflet-pm-icon-polyline').parent().hide();
@@ -397,10 +397,59 @@ $(document).ready(function () {
         if (query){
             computeQueryEmbedding()
         }
-
         $("#spinner").attr('hidden', '');
         document.getElementById("queryData").disabled = false;
     }
+
+    let pixiOverlay;
+    
+    async function createPixiOverlay() {
+        markerTexture = await PIXI.Assets.load('static/img/marker-icon.png');
+
+       const pixiContainer = new PIXI.Container();
+   
+       pixiOverlay = L.pixiOverlay(function (utils) {
+           const zoom = utils.getMap().getZoom();
+           const container = utils.getContainer();
+           const renderer = utils.getRenderer();
+           const project = utils.latLngToLayerPoint;
+           const scale = utils.getScale();
+
+           container.removeChildren();
+          
+          currentCSV.forEach(item => {
+               const marker = new PIXI.Sprite(markerTexture);
+               const markerCoords = project([item.lat, item.lon]);
+
+               marker.x = markerCoords.x;
+               marker.y = markerCoords.y;
+               marker.anchor.set(0.5, 1); // set the anchor to the bottom center
+               marker.scale.set(0.5 / scale) // scaling texture
+
+                 // Make the marker interactive
+               marker.interactive = true;
+               marker.buttonMode = true;
+
+               marker.on('click', (event) => {
+                // You can customize the tooltip content based on the item data
+                const tooltipContent = `Location ID: ${item["node.location_id"]}<br>Lat: ${item.lat}<br>Lon: ${item.lon}`;
+               
+                //Create a popup
+                   L.popup({maxWidth: 200, closeButton: false}).setLatLng([item.lat, item.lon])
+                   .setContent(tooltipContent)
+                   .openOn(map);
+               });
+
+
+               container.addChild(marker);
+           });
+       
+          renderer.render(container);
+       }, pixiContainer, { autoPreventDefault: false });
+
+       add_layer(pixiOverlay, "Markers");
+   }
+    
 
     initialize_data()
 
@@ -483,6 +532,11 @@ $(document).ready(function () {
 
     $('#queryData').click(function (event) {
         computeQueryEmbedding();
+    });
+
+    $('#addMarkers').click(function (event) {
+        createPixiOverlay();
+        $('#addMarkers').hide();
     });
 
     $(function () {
