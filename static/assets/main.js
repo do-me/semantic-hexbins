@@ -20,6 +20,7 @@ var pipe;
 var queryEmbedding;
 var minScore = 0.7;
 var minScoreQuantity = 3;
+var modelExecTime;
 
 // colorbrewer2 palettes, blues and greens, single hue 
 // https://colorbrewer2.org/#type=sequential&scheme=Blues&n=7 | https://colorbrewer2.org/#type=sequential&scheme=Greens&n=7
@@ -198,8 +199,10 @@ $(document).ready(function () {
 
     async function computeQueryEmbedding() {
         let inputQuery = $("#queryText").val()
+        let modelExecTimeStartTime = performance.now();
         // https://huggingface.co/intfloat/multilingual-e5-small#faq needs "query: " for better performance
         queryEmbedding = await pipe("query: " + inputQuery, { pooling: 'mean', normalize: false });
+        modelExecTime = performance.now() - modelExecTimeStartTime;
 
         queryEmbedding = Array.from(queryEmbedding["data"]);
 
@@ -532,7 +535,7 @@ $(document).ready(function () {
             }
           
             const formattedDuration = duration.toFixed(2);
-            document.getElementById('executionTime').innerHTML = `Last execution took ${formattedDuration} ms`;
+            document.getElementById('executionTime').innerHTML = `Full layer update took ${formattedDuration} ms, including ${modelExecTime.toFixed(2)} ms for inferencing`;
             console.log(`Function '${originalFunction.name || 'anonymous'}' Execution Time: ${duration} milliseconds`);
           
           if (performance.memory) {
