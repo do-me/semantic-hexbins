@@ -66,7 +66,7 @@ $(document).ready(function () {
         var bm_web_gry = L.maplibreGL({
             style: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_gry.json',
         });
-    
+
         var bm_web_col = L.maplibreGL({
             style: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json',
         });
@@ -76,7 +76,7 @@ $(document).ready(function () {
             "Basemap Gray": bm_web_gry,
             "Basemap Color": bm_web_col
         }).addTo(map);
-    
+
 
         L.control.scale().addTo(map);
         L.Control.geocoder().addTo(map);
@@ -156,7 +156,7 @@ $(document).ready(function () {
             ));
 
         hexLayer.dispatch()
-            .on('click', function(d, i) {
+            .on('click', function (d, i) {
                 //console.log({ type: 'click', event: d, index: i, context: this });
                 hexagon_click(d);
             });
@@ -255,11 +255,60 @@ $(document).ready(function () {
             //console.log(aboveThresholdSumCounts, minScoreQuantity)
             if (aboveThresholdSumCounts >= minScoreQuantity) {
                 // Find the maximum score
-                const maxScore = aboveThreshold.reduce((max, obj) => Math.max(max, obj["o"]["score"]), 0);
+                const scores = aboveThreshold.map(obj => obj["o"]["score"]);
+
+                // these functions are somehow explainable and referenced in the paper
+                const minScore = Math.min(...scores);
+                const maxScore = Math.max(...scores);
+                const meanScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+                const medianScore = scores.sort((a, b) => a - b)[Math.floor(scores.length / 2)];
+
+                // experimental, searching for "homogenous areas"
+                // Range
+                const rangeScore = Math.max(...scores) - Math.min(...scores);
+                const madScore = scores.reduce((sum, score) => sum + Math.abs(score - meanScore), 0) / scores.length; // Mean Absolute Deviation (MAD)
+                const varianceScore = scores.reduce((sum, score) => sum + (score - meanScore) ** 2, 0) / scores.length;// Standard Deviation
+                const stdDevScore = Math.sqrt(varianceScore);
+                const cvScore = (stdDevScore / meanScore)// Coefficient of Variation (CV)
                 //console.log(maxScore)
-                return maxScore;
+                const selectedValue = document.getElementById("min_max_mean_median").value;
+
+                // Return the respective score based on the selected value
+                const log_vals = false;
+
+                switch (selectedValue) {
+                    case "min":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${minScore}`);
+                        return minScore;
+                    case "max":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${maxScore}`);
+                        return maxScore;
+                    case "mean":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${meanScore}`);
+                        return meanScore;
+                    case "median":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${medianScore}`);
+                        return medianScore;
+                    case "range":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${rangeScore}`);
+                        return rangeScore;
+                    case "mad":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${madScore}`);
+                        return madScore;
+                    case "variance":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${varianceScore}`);
+                        return varianceScore;
+                    case "stdDev":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${stdDevScore}`);
+                        return stdDevScore;
+                    case "cv":
+                        if (log_vals) console.log(`Selected value: ${selectedValue}, Score: ${cvScore}`);
+                        return cvScore;
+                    default:
+                        throw new Error(`Unknown selected value: ${selectedValue}`);
+                }
             } else {
-                return 0; // 0 -> white, null -> transparent
+                return null; // 0 -> white, null -> transparent
             }
         });
 
@@ -321,7 +370,7 @@ $(document).ready(function () {
         return tooltip_text
     }
 
-    function hexagon_click(d){
+    function hexagon_click(d) {
         var locations = d.reduce(function (acc, obj) { acc.push(obj["o"]["node.location_id"]); return acc; }, []);
         locations = [...new Set(locations)]
 
@@ -388,13 +437,13 @@ $(document).ready(function () {
         hexLayer.redraw()
     }
 
-    async function initialize_data(query=false){
+    async function initialize_data(query = false) {
 
-        $("#spinner").attr('hidden',false);
+        $("#spinner").attr('hidden', false);
         document.getElementById("queryData").disabled = true;
 
         await loadRemoteGzippedJSON(filename);
-        if (query){
+        if (query) {
             computeQueryEmbedding()
         }
         $("#spinner").attr('hidden', '');
@@ -402,55 +451,119 @@ $(document).ready(function () {
     }
 
     let pixiOverlay;
-    
+
     async function createPixiOverlay() {
         markerTexture = await PIXI.Assets.load('static/img/marker-icon.png');
 
-       const pixiContainer = new PIXI.Container();
-   
-       pixiOverlay = L.pixiOverlay(function (utils) {
-           const zoom = utils.getMap().getZoom();
-           const container = utils.getContainer();
-           const renderer = utils.getRenderer();
-           const project = utils.latLngToLayerPoint;
-           const scale = utils.getScale();
+        const pixiContainer = new PIXI.Container();
 
-           container.removeChildren();
-          
-          currentCSV.forEach(item => {
-               const marker = new PIXI.Sprite(markerTexture);
-               const markerCoords = project([item.lat, item.lon]);
+        pixiOverlay = L.pixiOverlay(function (utils) {
+            const zoom = utils.getMap().getZoom();
+            const container = utils.getContainer();
+            const renderer = utils.getRenderer();
+            const project = utils.latLngToLayerPoint;
+            const scale = utils.getScale();
 
-               marker.x = markerCoords.x;
-               marker.y = markerCoords.y;
-               marker.anchor.set(0.5, 1); // set the anchor to the bottom center
-               marker.scale.set(0.5 / scale) // scaling texture
+            container.removeChildren();
 
-                 // Make the marker interactive
-               marker.interactive = true;
-               marker.buttonMode = true;
+            currentCSV.forEach(item => {
+                const marker = new PIXI.Sprite(markerTexture);
+                const markerCoords = project([item.lat, item.lon]);
 
-               marker.on('click', (event) => {
-                // You can customize the tooltip content based on the item data
-                const tooltipContent = `Location ID: ${item["node.location_id"]}<br>Lat: ${item.lat}<br>Lon: ${item.lon}`;
-               
-                //Create a popup
-                   L.popup({maxWidth: 200, closeButton: false}).setLatLng([item.lat, item.lon])
-                   .setContent(tooltipContent)
-                   .openOn(map);
-               });
+                marker.x = markerCoords.x;
+                marker.y = markerCoords.y;
+                marker.anchor.set(0.5, 1); // set the anchor to the bottom center
+                marker.scale.set(0.5 / scale) // scaling texture
+
+                // Make the marker interactive
+                marker.interactive = true;
+                marker.buttonMode = true;
+
+                marker.on('click', (event) => {
+                    // You can customize the tooltip content based on the item data
+                    const tooltipContent = `Location ID: ${item["node.location_id"]}<br>Lat: ${item.lat}<br>Lon: ${item.lon}`;
+
+                    //Create a popup
+                    L.popup({ maxWidth: 200, closeButton: false }).setLatLng([item.lat, item.lon])
+                        .setContent(tooltipContent)
+                        .openOn(map);
+                });
 
 
-               container.addChild(marker);
-           });
-       
-          renderer.render(container);
-       }, pixiContainer, { autoPreventDefault: false });
+                container.addChild(marker);
+            });
 
-       add_layer(pixiOverlay, "Markers");
-   }
+            renderer.render(container);
+        }, pixiContainer, { autoPreventDefault: false });
+
+        add_layer(pixiOverlay, "Markers");
+    }
+
+    function withResourceMonitoring(originalFunction) {
+        return async function(...args) {
+            const startMark = 'functionStart';
+            const endMark = 'functionEnd';
+            const measureName = 'functionDuration';
     
-
+            performance.mark(startMark);
+            let memoryStart = performance.memory ? performance.memory.usedJSHeapSize : null;
+    
+            let result;
+            try {
+                result = await originalFunction(...args);
+            } catch (error) {
+                console.error(`Error during function execution:`, error);
+                throw error; // Re-throw to allow error to propagate as expected if needed
+            }
+    
+    
+            performance.mark(endMark);
+            performance.measure(measureName, startMark, endMark);
+    
+            const duration = performance.getEntriesByName(measureName)[0].duration;
+            let memoryEnd = performance.memory ? performance.memory.usedJSHeapSize : null;
+    
+            // Ensure both memoryStart and memoryEnd are valid numbers before calculating memoryDelta
+            let memoryDelta;
+            if (typeof memoryStart === 'number' && typeof memoryEnd === 'number') {
+                memoryDelta = memoryEnd - memoryStart;
+            } else {
+                memoryDelta = null; // Or any suitable value to indicate an invalid delta.
+            }
+          
+            const formattedDuration = duration.toFixed(2);
+            document.getElementById('executionTime').innerHTML = `Last execution took ${formattedDuration} ms`;
+            console.log(`Function '${originalFunction.name || 'anonymous'}' Execution Time: ${duration} milliseconds`);
+          
+          if (performance.memory) {
+               const formattedMemoryStart = (typeof memoryStart === 'number') ? formatBytes(memoryStart) : 'N/A';
+               const formattedMemoryEnd = (typeof memoryEnd === 'number') ? formatBytes(memoryEnd) : 'N/A';
+               const formattedMemoryDelta = (typeof memoryDelta === 'number') ? formatBytes(memoryDelta) : 'N/A';
+    
+                console.log("Memory Usage Start:", formattedMemoryStart);
+                console.log("Memory Usage End:", formattedMemoryEnd);
+                console.log("Memory Delta:", formattedMemoryDelta);
+            } else {
+                console.log("performance.memory API is not supported in this browser");
+            }
+    
+    
+            performance.clearMarks(startMark);
+            performance.clearMarks(endMark);
+            performance.clearMeasures(measureName);
+    
+            return result;
+        };
+    }
+    
+    
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
     initialize_data()
 
     // Range slider listener
@@ -531,7 +644,9 @@ $(document).ready(function () {
     });
 
     $('#queryData').click(function (event) {
-        computeQueryEmbedding();
+        //computeQueryEmbedding();
+        const monitoredComputeQueryEmbedding = withResourceMonitoring(computeQueryEmbedding);
+        monitoredComputeQueryEmbedding();
     });
 
     $('#addMarkers').click(function (event) {
@@ -546,14 +661,18 @@ $(document).ready(function () {
     $("#dataFile").on("change", function () {
         filename = "data/" + $(this).val();
         mean_location_variant = filename.includes("mean_location");
-        initialize_data(query=true)
+        initialize_data(query = true)
     });
 
     $('#queryText').keydown(function (event) {
         if (event.keyCode == 13) {
-            event.preventDefault(); 
+            event.preventDefault();
             computeQueryEmbedding();
         }
+    });
+
+    $("#min_max_mean_median").on("change", function () {
+        updateColorValueFunction();
     });
 
 })

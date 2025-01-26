@@ -194,12 +194,11 @@
                 <input type="range" class="form-control-range" id="minScoreQuantityRange" min="1" max="1000" step="1"
                     value="3">
             </div>
-            <div id="min_max_mean_median_container" hidden>
+            <div id="min_max_mean_median_container">
                 <h5><label for="dataFile" data-toggle="tooltip"
                     title="Select binning function for hexbin. Max is most likely what you're looking for as it behaves intuitively. You'll see a wild 'color jumping' across zoom levels if you select other functions here.">Binning function</label>
                 </h5>
-                <label for="min_max_mean_median">Select Statistic:</label>
-                <select id="min_max_mean_median" class="form-select">
+                    <select id="min_max_mean_median" class="form-select">
                     <option value="min">Min</option>
                     <option selected value="max">Max</option>
                     <option value="mean">Mean</option>
@@ -208,16 +207,13 @@
                     <option value="variance">Variance</option>
                     <option value="stdDev">Standard Deviation</option>
                     <option value="cv">Coefficient of Variation</option>
-                    <option value="variance">Variance</option>
-                    <option value="range">Range</option>
                 </select>
                 </div>
             <br>
 
             <button type="button" id="queryData" class="btn btn-primary" disabled>🔎 Submit</button>
             <button type="button" id="addMarkers" class="btn btn-secondary">📍 Add markers</button>
-            <br>
-            <br>
+            <div id="executionTime" style="margin-top: 5px; font-size: 0.8em;"></div>
             <h5><label data-toggle="tooltip" title="Instagram Locations in last-clicked hexbin">Instagram
                     Locations (click hexbin)</label></h5>
             <div id="locations"></div>
