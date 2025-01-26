@@ -138,7 +138,7 @@ $(document).ready(function () {
         var options = {
             //radius : 12,
             opacity: 0.75,
-            duration: 200,
+            duration: 0,
             colorScaleExtent: [0.5, 1]
             //colorScaleExtent: [ 0,6 ]
         };
