@@ -26,17 +26,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@523026349a6949660214412e0a6a953f1af94c44 # Specific commit hash of v3 that uses v4 of upload-artifact
         with:
           path: .
           # Exclude the 'screenshots' directory
           retention-days: 1
           exclude: |
             screenshots/
-          name: my-website-artifact-${{ github.run_id }}  # Added dynamic artifact name.
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v3
-        with:
-          artifact-name: my-website-artifact-${{ github.run_id }}
