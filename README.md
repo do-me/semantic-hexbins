@@ -24,4 +24,7 @@ The paper describes an approach to use semantic similarity for geospatial purpos
 - [686.558 random aggregated posts, mean embedding for 4487 locations with >9 posts (9Mb)](data/4487_rows_e5_multilingual_small_mean_location_greater_9.json.gz)
 - [542.722 random aggregated posts, mean embedding for 1028 locations with >99 posts (2Mb)](data/1028_rows_e5_multilingual_small_mean_location_greater_99.json.gz)
 
-A script for data processing can be found here: https://gist.github.com/do-me/d60ea47d0dc97ba40c9d727bf26f7a77
+Scripts for data processing can be found here:
+- https://gist.github.com/do-me/d60ea47d0dc97ba40c9d727bf26f7a77
+- https://gist.github.com/do-me/dc8877049c2c074df3c7d8e707adf138
+- https://github.com/do-me/fast-instagram-scraper
