@@ -16,7 +16,7 @@ The paper describes an approach to use semantic similarity for geospatial purpos
 
 ## Data samples
 
-Ranging from 32 - 8 Mb for individual posts or 0.8 - 5.1 Mb for aggreagted posts, see data folder.
+Ranging from 8 - 32 Mb for individual posts or 0.8 - 5.1 Mb for aggreagted posts, see data folder.
 
 ## Scripts
 
