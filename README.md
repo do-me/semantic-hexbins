@@ -25,6 +25,10 @@ Scripts for data processing can be found here:
 - https://gist.github.com/do-me/dc8877049c2c074df3c7d8e707adf138
 - https://github.com/do-me/fast-instagram-scraper
 
+## Example Queries 
+
+See the screenshots folder for query comparisons between the location-averaged and individual embedding indice.
+
 ## Performance 
 
 Tested devices: 
