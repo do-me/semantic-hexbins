@@ -16,15 +16,22 @@ The paper describes an approach to use semantic similarity for geospatial purpos
 
 ## Data samples
 
-- [10.000 random individual posts (10Mb)](data/10_000_rows_e5_multilingual_small__4_dec.json.gz)
-- [20.000 random individual posts (20Mb)](data/20_000_rows_e5_multilingual_small__4_dec.json.gz)
-- [40.000 random individual posts (40Mb)](data/40_000_rows_e5_multilingual_small__4_dec.json.gz)
-- [693.959 random aggregated posts, mean embedding for 6630 locations (13Mb)](data/6630_rows_e5_multilingual_small_mean_location.json.gz)
-- [693.293 random aggregated posts, mean embedding for 5964 locations with >1 posts (12Mb)](data/5964_rows_e5_multilingual_small_mean_location_greater_1.json.gz)
-- [686.558 random aggregated posts, mean embedding for 4487 locations with >9 posts (9Mb)](data/4487_rows_e5_multilingual_small_mean_location_greater_9.json.gz)
-- [542.722 random aggregated posts, mean embedding for 1028 locations with >99 posts (2Mb)](data/1028_rows_e5_multilingual_small_mean_location_greater_99.json.gz)
+Ranging from 32 - 8 Mb for individual posts or 0.8 - 5.1 Mb for aggreagted posts, see data folder.
+
+## Scripts
 
 Scripts for data processing can be found here:
 - https://gist.github.com/do-me/d60ea47d0dc97ba40c9d727bf26f7a77
 - https://gist.github.com/do-me/dc8877049c2c074df3c7d8e707adf138
 - https://github.com/do-me/fast-instagram-scraper
+
+## Performance 
+
+Tested devices: 
+
+- Windows laptop with Intel i7-8550 CPU
+- Ubuntu laptop with AMD Ryzen 7 PRO 6850U
+- Android phone Samsung S9 with Exynos 9810
+- Apple iPhone 15 Pro with A17 Pro
+
+Run times for a full layer update are significantly below 200ms. Iphone 15 Pro averages 51ms (24ms for inferencing), averaged for 100 runs.
