@@ -34,4 +34,4 @@ Tested devices:
 - Android phone Samsung S9 with Exynos 9810
 - Apple iPhone 15 Pro with A17 Pro
 
-Run times for a full layer update are significantly below 200ms. Iphone 15 Pro averages 51ms (24ms for inferencing), averaged for 100 runs.
+Run times for a full layer update are significantly below 200ms with ~60ms inferencing time. Iphone 15 Pro averages 51ms (24ms for inferencing), averaged for 100 runs.
