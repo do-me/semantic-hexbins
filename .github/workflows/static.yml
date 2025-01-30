@@ -26,13 +26,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@523026349a6949660214412e0a6a953f1af94c44 # Specific commit hash of v3 that uses v4 of upload-artifact
+        uses: actions/upload-pages-artifact@v3 # Using v3 tag
         with:
-          path: .
-          # Exclude the 'screenshots' directory
-          retention-days: 1
-          exclude: |
-            screenshots/
+           upload-artifact-version: v4 # Explicitly specify that the upload-artifact action used should be v4
+           path: .
+           retention-days: 1
+           exclude: |
+             screenshots/
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v3
