@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full-Text Search Benchmark in JS Without Index</title>
+    <style>
+        /* --- Base Styles, Container, Header, p, hr (Keep as before) --- */
+        :root { /* ... colors etc ... */
+            --primary-color: #007bff; --secondary-color: #6c757d; --success-color: #28a745; --warning-color: #ffc107; --danger-color: #dc3545; --light-color: #f8f9fa; --dark-color: #343a40; --border-color: #dee2e6; --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; --border-radius: 0.25rem;
+        }
+        body { /* ... basic body styles ... */
+            font-family: var(--font-family-sans-serif); line-height: 1.6; background-color: var(--light-color); color: var(--dark-color); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .container { /* ... container styles ... */
+             width: 90%; max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: var(--border-radius); box-shadow: 0 2px 10px rgba(0,0,0,0.1); flex-grow: 1;
+        }
+        header h1 { /* ... header styles ... */
+             color: var(--dark-color); text-align: center; margin-bottom: 20px;
+        }
+        p { margin-bottom: 1rem; }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0; }
+
+        /* --- Button Styles (Keep Benchmark button, update Download button) --- */
+        button#runTestButton { /* ... styles as before ... */
+            display: block; width: 100%; padding: 12px 20px; font-size: 1.1em; font-weight: bold; color: #fff; background-color: var(--primary-color); border: none; border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.2s ease, opacity 0.2s ease; margin-top: 20px;
+        }
+        button#runTestButton:hover:not(:disabled) { background-color: #0056b3; }
+        button#runTestButton:disabled { background-color: var(--secondary-color); cursor: not-allowed; opacity: 0.7; }
+
+        /* Updated: Download Button Style */
+        button#downloadDataCsvButton {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            color: var(--primary-color);
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            margin-top: 15px; /* Spacing from table */
+            display: block; /* Make it block level */
+            width: fit-content; /* Size to content */
+        }
+        button#downloadDataCsvButton:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        button#downloadDataCsvButton:disabled {
+             color: var(--secondary-color);
+             border-color: var(--secondary-color);
+             cursor: not-allowed;
+             opacity: 0.7;
+        }
+
+        /* --- Sections & Configuration (Keep as before) --- */
+         .config-section, .results-section, .samples-section { margin-bottom: 25px; }
+         .config-section h2, .results-section h2, .samples-section h2 { /* ... section header styles ... */
+             margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;
+         }
+        .slider-container { /* ... slider styles ... */
+             display: flex; align-items: center; margin-bottom: 10px; gap: 10px;
+        }
+        .slider-container label { flex-basis: 80px; text-align: right; font-weight: bold; font-size: 0.9em; }
+        .slider-container input[type="range"] { flex-grow: 1; cursor: pointer; }
+        .slider-container output { font-weight: bold; min-width: 30px; text-align: right; background-color: var(--light-color); padding: 2px 6px; border-radius: var(--border-radius); font-size: 0.9em; }
+
+        /* --- Progress & Results Styling (Keep compact results) --- */
+        #progress { /* ... progress styles ... */
+             font-style: italic; color: var(--secondary-color); background-color: #f0f0f0; padding: 10px; border-radius: var(--border-radius); margin-top: 15px; min-height: 1.5em; text-align: center;
+        }
+        #results { /* ... results div styles ... */
+             margin-top: 10px; padding: 15px; border: 1px solid var(--border-color); background-color: var(--light-color); border-radius: var(--border-radius); word-wrap: break-word;
+        }
+        #results p { margin-bottom: 0.5rem; line-height: 1.4; } /* Compact results */
+        #results p:last-child { margin-bottom: 0; }
+        #results strong { /* ... strong tag styles ... */
+             display: inline-block; min-width: 190px; color: var(--dark-color); font-weight: 600;
+        }
+        #results .note { font-size: 0.85em; color: var(--secondary-color); margin-top: 0.8rem; }
+
+        /* --- NEW: Samples Table Styling --- */
+        #samplesContainer {
+            margin-top: 15px;
+            max-height: 250px; /* Limit height and add scroll */
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+        }
+        #samplesTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        #samplesTable th, #samplesTable td {
+            border: 1px solid var(--border-color);
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        #samplesTable th {
+            background-color: var(--light-color);
+            position: sticky; /* Keep header visible on scroll */
+            top: 0;
+            z-index: 1;
+        }
+        #samplesTable td:nth-child(1), /* Lat */
+        #samplesTable td:nth-child(2), /* Lon */
+        #samplesTable td:nth-child(3) { /* ID */
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        #samplesTable td:nth-child(4) { /* Text */
+             word-break: break-word; /* Allow long text to wrap */
+        }
+
+        /* --- Messages & Footer (Keep as before) --- */
+        .warning { /* ... warning styles ... */
+             color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: var(--border-radius); font-weight: bold;
+        }
+        .info { color: var(--primary-color); font-weight: bold; }
+        .error { color: var(--danger-color); font-weight: bold; }
+        footer { /* ... footer styles ... */
+             text-align: center; margin-top: auto; padding: 15px; font-size: 0.85em; color: var(--secondary-color); background-color: #e9ecef;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Full-Text Search Benchmark in JS Without Index</h1>
+        </header>
+
+        <p>
+            This page runs a benchmark on 693.959 rows of randomly generated structured data (Text, Lat, Lon, Location ID).
+            Adjust the text word count range below.
+        </p>
+        <p class="warning">
+            ⚠️ Warning: Generating and searching ~700k entries is memory/CPU intensive.
+            The page might freeze during the test. Downloading the full CSV dataset will also be large.
+        </p>
+
+        <section class="config-section">
+             <h2>Configuration (Text Length)</h2>
+             <!-- Sliders -->
+             <div class="slider-container">
+                 <label for="minWords">Min Words:</label>
+                 <input type="range" id="minWords" name="minWords" min="1" max="199" value="3" step="1">
+                 <output for="minWords" id="minWordsOutput">3</output>
+             </div>
+             <div class="slider-container">
+                 <label for="maxWords">Max Words:</label>
+                 <input type="range" id="maxWords" name="maxWords" min="2" max="200" value="30" step="1">
+                 <output for="maxWords" id="maxWordsOutput">30</output>
+             </div>
+             <button id="runTestButton">Run Benchmark</button>
+        </section>
+
+        <div id="progress">Ready. Click the button to start.</div>
+
+        <section class="results-section" style="display: none;">
+            <h2>Benchmark Results</h2>
+            <div id="results"></div> <!-- Results will be injected here -->
+        </section>
+
+        <section class="samples-section" style="display: none;">
+            <h2>Sample Generated Data (First 5)</h2>
+            <!-- Table Structure -->
+            <div id="samplesContainer">
+                <table id="samplesTable">
+                    <thead>
+                        <tr>
+                            <th>Lat</th>
+                            <th>Lon</th>
+                            <th>Location ID</th>
+                            <th>Text</th>
+                        </tr>
+                    </thead>
+                    <tbody id="samplesTableBody"></tbody>
+                </table>
+            </div>
+            <!-- Download Button -->
+            <button id="downloadDataCsvButton" style="display: none;">Download Full Sample Data (CSV)</button>
+        </section>
+
+    </div>
+
+    <footer>
+        Note: Simulates a basic search. Real systems use indexing. CSV export includes Lat, Lon, Location ID, Text.
+    </footer>
+
+    <script>
+        // --- DOM Elements (Keep as before) ---
+        const runTestButton = document.getElementById('runTestButton');
+        const resultsDiv = document.getElementById('results');
+        const progressDiv = document.getElementById('progress');
+        const samplesTableBody = document.getElementById('samplesTableBody');
+        const resultsSection = document.querySelector('.results-section');
+        const samplesSection = document.querySelector('.samples-section');
+        const minWordsSlider = document.getElementById('minWords');
+        const maxWordsSlider = document.getElementById('maxWords');
+        const minWordsOutput = document.getElementById('minWordsOutput');
+        const maxWordsOutput = document.getElementById('maxWordsOutput');
+        const downloadDataCsvButton = document.getElementById('downloadDataCsvButton');
+
+        // --- Configuration (Keep as before) ---
+        const NUM_ENTRIES = 693959;
+        const SEARCH_TERM = "social";
+        const VOCABULARY = ["the", "a", "is", "of", "and", "to", "in", "it", "that", "this", "post", "like", "share", "comment", "user", "test", "data", "hello", "world", "quick", "brown", "fox", "jumps", "over", "lazy", "dog", "social", "media", "update", "status", "random", "text", "example", "search", "query", "performance", "entry", "some", "more", "words", "for", "variety", "browser", "javascript", "code", "run", "simple", "algorithm", "benchmark", "performance", "speed", "cpu", "memory", "database", "index", "querying"];
+
+        // --- State Variable (Keep as before) ---
+        let generatedData = null;
+
+        // --- Slider Logic (Keep as before) ---
+        let currentMinWords = parseInt(minWordsSlider.value, 10);
+        let currentMaxWords = parseInt(maxWordsSlider.value, 10);
+        minWordsOutput.textContent = currentMinWords;
+        maxWordsOutput.textContent = currentMaxWords;
+        minWordsSlider.oninput = function() { /* ... logic ... */ currentMinWords = parseInt(this.value, 10); minWordsOutput.textContent = currentMinWords; if (currentMinWords >= currentMaxWords) { currentMaxWords = currentMinWords + 1; if (currentMaxWords > parseInt(maxWordsSlider.max, 10)) { currentMaxWords = parseInt(maxWordsSlider.max, 10); if (currentMinWords >= currentMaxWords) { currentMinWords = currentMaxWords -1; this.value = currentMinWords; minWordsOutput.textContent = currentMinWords; } } maxWordsSlider.value = currentMaxWords; maxWordsOutput.textContent = currentMaxWords; } };
+        maxWordsSlider.oninput = function() { /* ... logic ... */ currentMaxWords = parseInt(this.value, 10); maxWordsOutput.textContent = currentMaxWords; if (currentMaxWords <= currentMinWords) { currentMinWords = currentMaxWords - 1; if (currentMinWords < parseInt(minWordsSlider.min, 10)) { currentMinWords = parseInt(minWordsSlider.min, 10); if (currentMaxWords <= currentMinWords) { currentMaxWords = currentMinWords + 1; this.value = currentMaxWords; maxWordsOutput.textContent = currentMaxWords; } } minWordsSlider.value = currentMinWords; minWordsOutput.textContent = currentMinWords; } };
+
+
+        // --- Helper Functions (Keep generateRandomText, Lat, Lon, ID, escapeCsvField) ---
+        function generateRandomText(minWords, maxWords, vocabulary) { /* ... logic ... */
+             const actualMin = Math.min(minWords, maxWords); const actualMax = Math.max(minWords, maxWords); const numWords = Math.floor(Math.random() * (actualMax - actualMin + 1)) + actualMin; let text = []; for (let i = 0; i < numWords; i++) { const randomIndex = Math.floor(Math.random() * vocabulary.length); text.push(vocabulary[randomIndex]); } return text.join(" ");
+        }
+        function generateRandomLat() { return (Math.random() * 180 - 90).toFixed(5); }
+        function generateRandomLon() { return (Math.random() * 360 - 180).toFixed(5); }
+        function generateRandomLocationId() { let id = ''; for (let i = 0; i < 10; i++) { id += Math.floor(Math.random() * 10); } return id; }
+        function escapeCsvField(field) { /* ... logic ... */
+             if (field === null || field === undefined) { return ''; } const stringField = String(field); if (stringField.includes(',') || stringField.includes('\n') || stringField.includes('"')) { const escapedField = stringField.replace(/"/g, '""'); return `"${escapedField}"`; } return stringField;
+        }
+
+        // REMOVED: estimateMemory function
+
+        // --- Download Function (CSV) (Keep as before) ---
+        function downloadDataAsCsv() { /* ... logic ... */
+            if (!generatedData || generatedData.length === 0) { alert('No data generated.'); return; }
+            progressDiv.innerHTML = 'Preparing CSV download...'; downloadDataCsvButton.disabled = true;
+            setTimeout(() => { try { const csvHeader = "lat,lon,location_id,text\n"; const csvRows = generatedData.map(item => `${item.lat},${item.lon},${item.location_id},${escapeCsvField(item.text)}`); const csvString = csvHeader + csvRows.join("\n"); const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `benchmark_data_${generatedData.length}_entries.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); progressDiv.innerHTML = 'CSV Download initiated.'; } catch (e) { console.error("Error creating CSV download file:", e); progressDiv.innerHTML = '<span class="error">Error creating CSV file.</span>'; alert('Failed to prepare download.'); } finally { downloadDataCsvButton.disabled = false; setTimeout(() => { if (progressDiv.innerHTML === 'CSV Download initiated.') { progressDiv.innerHTML = 'Benchmark complete.'; } }, 3000); } }, 10);
+        }
+
+        // --- Main Benchmark Function ---
+        function runBenchmark() {
+            // --- UI Updates Start (Keep as before) ---
+            generatedData = null;
+            resultsDiv.innerHTML = '';
+            samplesTableBody.innerHTML = '';
+            resultsSection.style.display = 'none';
+            samplesSection.style.display = 'none';
+            downloadDataCsvButton.style.display = 'none';
+            downloadDataCsvButton.disabled = true;
+            progressDiv.innerHTML = '<span class="info">Starting benchmark... Please wait.</span>';
+            runTestButton.disabled = true;
+            minWordsSlider.disabled = true;
+            maxWordsSlider.disabled = true;
+
+            setTimeout(() => {
+                let dataBuffer = [];
+                let actualNumEntries = 0;
+                let generationDuration = 0;
+                let searchDuration = 0;
+                let matchCount = 0;
+                let generationError = null;
+                // REMOVED: estimatedMemory variable
+
+                const minW = currentMinWords;
+                const maxW = currentMaxWords;
+
+                try {
+                    // --- Data Generation (Keep as before) ---
+                    progressDiv.innerHTML = `Generating ${NUM_ENTRIES.toLocaleString()} structured entries...`;
+                    const genStartTime = performance.now();
+                    for (let i = 0; i < NUM_ENTRIES; i++) {
+                        dataBuffer.push({ lat: generateRandomLat(), lon: generateRandomLon(), location_id: generateRandomLocationId(), text: generateRandomText(minW, maxW, VOCABULARY) });
+                        if (i > 0 && i % 100000 === 0 && (i % 200000 === 0 || i < 200000)) { progressDiv.innerHTML = `... generated ${i.toLocaleString()} / ${NUM_ENTRIES.toLocaleString()} entries`; }
+                    }
+                    actualNumEntries = dataBuffer.length;
+                    generatedData = dataBuffer;
+                    const genEndTime = performance.now();
+                    generationDuration = (genEndTime - genStartTime) / 1000;
+                    progressDiv.innerHTML = `Data generation complete. Generated ${actualNumEntries.toLocaleString()} entries.`;
+
+                    // REMOVED: Call to estimateMemory
+
+                    // Display samples & Show/Enable Download Button (Keep as before)
+                    if (actualNumEntries > 0) { /* ... logic ... */
+                         samplesSection.style.display = 'block'; const sampleCount = Math.min(5, actualNumEntries); samplesTableBody.innerHTML = ''; for(let i = 0; i < sampleCount; i++) { const item = generatedData[i]; const row = samplesTableBody.insertRow(); row.insertCell(0).textContent = item.lat; row.insertCell(1).textContent = item.lon; row.insertCell(2).textContent = item.location_id; row.insertCell(3).textContent = item.text; } downloadDataCsvButton.style.display = 'block'; downloadDataCsvButton.disabled = false;
+                     }
+
+                } catch (e) {
+                    // --- Error Handling (Keep as before, but no memory estimation) ---
+                    generationError = e;
+                    console.error("Error during data generation:", e);
+                    actualNumEntries = dataBuffer.length;
+                    generatedData = dataBuffer;
+                    // REMOVED: Call to estimateMemory
+                    progressDiv.innerHTML = `<span class="error">Error during data generation. Test will run on ${actualNumEntries.toLocaleString()} entries.</span>`;
+
+                    if (actualNumEntries === 0) { /* ... logic ... */
+                         resultsSection.style.display = 'block'; resultsDiv.innerHTML = `<p class="error"><strong>Error:</strong> Failed to generate any data.</p><p>Details: ${e.message}</p>`; runTestButton.disabled = false; minWordsSlider.disabled = false; maxWordsSlider.disabled = false; generatedData = null; return;
+                    } else { /* ... logic ... */
+                         samplesSection.style.display = 'block'; const sampleCount = Math.min(5, actualNumEntries); samplesTableBody.innerHTML = ''; for(let i = 0; i < sampleCount; i++) { const item = generatedData[i]; const row = samplesTableBody.insertRow(); row.insertCell(0).textContent = item.lat; row.insertCell(1).textContent = item.lon; row.insertCell(2).textContent = item.location_id; row.insertCell(3).textContent = item.text; } downloadDataCsvButton.style.display = 'block'; downloadDataCsvButton.disabled = false;
+                    }
+                }
+
+                // --- Search Simulation (Keep as before) ---
+                if (actualNumEntries > 0) { /* ... logic ... */
+                    progressDiv.innerHTML += `<br>Starting search for "${SEARCH_TERM}" in text fields...`; const searchTermLower = SEARCH_TERM.toLowerCase(); const searchStartTime = performance.now(); for (let i = 0; i < actualNumEntries; i++) { if (generatedData[i].text.toLowerCase().includes(searchTermLower)) { matchCount++; } } const searchEndTime = performance.now(); searchDuration = (searchEndTime - searchStartTime) / 1000; progressDiv.innerHTML = "Benchmark complete.";
+                } else { progressDiv.innerHTML = "Benchmark stopped (no data)."; searchDuration = 0; }
+
+                // --- Display Results (UPDATED Template) ---
+                resultsSection.style.display = 'block';
+                resultsDiv.innerHTML = `
+                    <p><strong>Target Entries:</strong> ${NUM_ENTRIES.toLocaleString()}</p>
+                    <p><strong>Actual Entries Generated:</strong> ${actualNumEntries.toLocaleString()}</p>
+                    <p><strong>Text Word Count Range:</strong> ${minW} - ${maxW}</p>
+                    <p><strong>Searched Term (in text):</strong> "${SEARCH_TERM}"</p>
+                    <!-- REMOVED Memory Usage Line -->
+                    <hr style="margin: 1rem 0;">
+                    ${generationError ? `<p><strong class="error">Data Generation Note:</strong> Halted early.</p><p>Details: ${generationError.message}</p>` : `<p><strong>Data Generation Time:</strong> ${generationDuration.toFixed(3)} s</p>`}
+                    ${actualNumEntries > 0 ? `<p><strong>Full Text Search Time:</strong> ${searchDuration.toFixed(3)} s</p>` : '<p><strong>Full Text Search Time:</strong> N/A</p>'}
+                    <p><strong>Matches Found:</strong> ${matchCount.toLocaleString()}</p>
+                `;
+
+                // --- UI Updates End (Keep as before) ---
+                runTestButton.disabled = false;
+                minWordsSlider.disabled = false;
+                maxWordsSlider.disabled = false;
+                downloadDataCsvButton.disabled = !(generatedData && generatedData.length > 0);
+
+            }, 50);
+        }
+
+        // --- Attach Event Listeners (Keep as before) ---
+        runTestButton.addEventListener('click', runBenchmark);
+        downloadDataCsvButton.addEventListener('click', downloadDataAsCsv);
+
+    </script>
+
+</body>
+</html>
