@@ -39,3 +39,9 @@ Tested devices:
 - Apple iPhone 15 Pro with A17 Pro
 
 Run times for a full layer update are significantly below 200ms with ~60ms inferencing time. Iphone 15 Pro averages 51ms (24ms for inferencing), averaged for 100 runs.
+
+For comparison to a simple full-text search in JS see the standalone html file `benchmark_full_text_search_no_index.html`. It benchmarks dummy data in social media style with 4 columns: lat, lon, location ID and text.
+
+![image](https://github.com/user-attachments/assets/9364866c-a1de-453c-a4b4-18f93fa6c549)
+
+Screenshot results run on an M3 Max.
