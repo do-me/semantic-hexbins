@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full-Text Search Benchmark (Rows vs. Aggregated) in JS</title>
+    <style>
+        /* --- Base Styles, Container, Header, p, hr --- */
+        :root { /* ... colors etc ... */
+            --primary-color: #007bff; --secondary-color: #6c757d; --success-color: #28a745; --warning-color: #ffc107; --danger-color: #dc3545; --light-color: #f8f9fa; --dark-color: #343a40; --border-color: #dee2e6; --font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; --border-radius: 0.25rem;
+        }
+        body { /* ... basic body styles ... */
+            font-family: var(--font-family-sans-serif); line-height: 1.6; background-color: var(--light-color); color: var(--dark-color); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        .container { /* ... container styles ... */
+             width: 90%; max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: var(--border-radius); box-shadow: 0 2px 10px rgba(0,0,0,0.1); flex-grow: 1;
+        }
+        header h1 { /* ... header styles ... */
+             color: var(--dark-color); text-align: center; margin-bottom: 20px; font-size: 1.8em;
+        }
+        p { margin-bottom: 1rem; }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0; }
+
+        /* --- Button Styles --- */
+        button#runTestButton {
+            display: block; width: 100%; padding: 12px 20px; font-size: 1.1em; font-weight: bold; color: #fff; background-color: var(--primary-color); border: none; border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.2s ease, opacity 0.2s ease; margin-top: 20px;
+        }
+        button#runTestButton:hover:not(:disabled) { background-color: #0056b3; }
+        button#runTestButton:disabled { background-color: var(--secondary-color); cursor: not-allowed; opacity: 0.7; }
+
+        /* Download Buttons Style (Shared Styling) */
+        .download-button {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            color: var(--primary-color);
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            margin-top: 5px; /* Adjusted margin */
+            margin-right: 10px; /* Spacing between buttons */
+            display: inline-block; /* Allow buttons side-by-side */
+            width: fit-content; /* Size to content */
+        }
+        .download-button:last-of-type {
+            margin-right: 0; /* No right margin for the last button */
+        }
+        .download-button:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .download-button:disabled {
+             color: var(--secondary-color);
+             border-color: var(--secondary-color);
+             cursor: not-allowed;
+             opacity: 0.7;
+        }
+        /* Container for download buttons */
+        #downloadButtonsContainer {
+            margin-top: 15px; /* Spacing from table */
+        }
+
+        /* --- Sections & Configuration --- */
+         .config-section, .results-section, .samples-section { margin-bottom: 25px; }
+         .config-section h2, .results-section h2, .samples-section h2 { /* ... section header styles ... */
+             margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;
+         }
+         .results-section h3 { /* Sub-heading for results types */
+            margin-top: 1.2rem;
+            margin-bottom: 0.8rem;
+            color: var(--secondary-color);
+            font-size: 1.1em;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 3px;
+         }
+        .slider-container { /* ... slider styles ... */
+             display: flex; align-items: center; margin-bottom: 10px; gap: 10px;
+        }
+        .slider-container label { flex-basis: 120px; text-align: right; font-weight: bold; font-size: 0.9em; } /* Adjusted flex-basis */
+        .slider-container input[type="range"] { flex-grow: 1; cursor: pointer; }
+        .slider-container output { font-weight: bold; min-width: 30px; text-align: right; background-color: var(--light-color); padding: 2px 6px; border-radius: var(--border-radius); font-size: 0.9em; }
+
+         /* Input Field Configuration Style */
+         .input-container {
+             display: flex;
+             align-items: center;
+             margin-bottom: 10px;
+             gap: 10px;
+         }
+         .input-container label {
+             flex-basis: 140px; /* Increased basis to fit longer labels */
+             text-align: right;
+             font-weight: bold;
+             font-size: 0.9em;
+             flex-shrink: 0; /* Prevent label shrinking */
+         }
+         .input-container input[type="number"] {
+             flex-grow: 1;
+             padding: 8px;
+             border: 1px solid var(--border-color);
+             border-radius: var(--border-radius);
+             font-size: 0.9em;
+             min-width: 80px; /* Ensure input doesn't get too small */
+         }
+
+        /* --- Status & Results Styling --- */
+        #statusMessage {
+             font-style: italic; color: var(--secondary-color);
+             padding: 10px; border-radius: var(--border-radius); margin-top: 15px;
+             min-height: 1.5em; text-align: center; background-color: #e9ecef;
+        }
+        #results { /* ... results div styles ... */
+             margin-top: 10px; padding: 15px; border: 1px solid var(--border-color); background-color: var(--light-color); border-radius: var(--border-radius); word-wrap: break-word;
+        }
+        #results p { margin-bottom: 0.5rem; line-height: 1.4; } /* Compact results */
+        #results p:last-child { margin-bottom: 0; }
+        #results strong { /* ... strong tag styles ... */
+             display: inline-block; min-width: 210px; /* Increased width */ color: var(--dark-color); font-weight: 600;
+        }
+        #results .note { font-size: 0.85em; color: var(--secondary-color); margin-top: 0.8rem; }
+
+        /* --- Samples Table Styling --- */
+        #samplesContainer {
+            margin-top: 15px;
+            max-height: 250px; /* Limit height and add scroll */
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+        }
+        #samplesTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        #samplesTable th, #samplesTable td {
+            border: 1px solid var(--border-color);
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        #samplesTable th {
+            background-color: var(--light-color);
+            position: sticky; /* Keep header visible on scroll */
+            top: 0;
+            z-index: 1;
+        }
+        #samplesTable td:nth-child(1), /* Lat */
+        #samplesTable td:nth-child(2), /* Lon */
+        #samplesTable td:nth-child(3) { /* ID */
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        #samplesTable td:nth-child(4) { /* Text */
+             word-break: break-word; /* Allow long text to wrap */
+        }
+
+        /* --- Messages & Footer --- */
+        .warning { /* ... warning styles ... */
+             color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: var(--border-radius); font-weight: bold;
+        }
+        .info { color: var(--primary-color); font-weight: bold; }
+        .error { color: var(--danger-color); font-weight: bold; }
+        footer { /* ... footer styles ... */
+             text-align: center; margin-top: auto; padding: 15px; font-size: 0.85em; color: var(--secondary-color); background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Full-Text Search Benchmark (Rows vs. Aggregated)</h1>
+        </header>
+
+        <p>
+            This page runs a benchmark on randomly generated structured data (Text, Lat, Lon, Location ID).
+            It first searches the raw row data, then aggregates the data by Location ID (concatenating text), and searches the aggregated data.
+            Results for both search types are presented for comparison.
+            <span class="info">Note: The same Location ID will always have the same Lat/Lon pair.</span>
+        </p>
+        <p class="warning">
+            ⚠️ Warning: Generating, aggregating, and searching large datasets is memory/CPU intensive.
+            The page might freeze during the test. Downloads can also be large.
+        </p>
+
+        <section class="config-section">
+             <h2>Configuration</h2>
+
+             <!-- Number of Rows Input -->
+             <div class="input-container">
+                 <label for="numRows">Number of Rows:</label>
+                 <input type="number" id="numRows" name="numRows" min="1" max="10000000" value="693959" step="1000"> <!-- Default reduced for quicker testing -->
+             </div>
+
+             <!-- Unique Location IDs Input -->
+             <div class="input-container">
+                 <label for="numUniqueLocations">Unique Location IDs:</label>
+                 <input type="number" id="numUniqueLocations" name="numUniqueLocations" min="1" max="100000" value="6630" step="10"> <!-- Default reduced -->
+             </div>
+
+             <!-- Text Length Sliders -->
+             <div class="slider-container">
+                 <label for="minWords">Min Words (Text):</label>
+                 <input type="range" id="minWords" name="minWords" min="1" max="199" value="3" step="1">
+                 <output for="minWords" id="minWordsOutput">3</output>
+             </div>
+             <div class="slider-container">
+                 <label for="maxWords">Max Words (Text):</label>
+                 <input type="range" id="maxWords" name="maxWords" min="2" max="10000" value="30" step="1">
+                 <output for="maxWords" id="maxWordsOutput">30</output>
+             </div>
+             <!-- Search Repetitions Slider -->
+             <div class="slider-container">
+                <label for="searchReps">Search Repetitions:</label>
+                <input type="range" id="searchReps" name="searchReps" min="1" max="1000" value="10" step="1">
+                <output for="searchReps" id="searchRepsOutput">10</output>
+            </div>
+             <button id="runTestButton">Run Benchmark</button>
+        </section>
+
+        <!-- Status message div -->
+        <div id="statusMessage">Ready. Click the button to start.</div>
+
+        <section class="results-section" style="display: none;">
+            <h2>Benchmark Results</h2>
+            <div id="results"></div> <!-- Results will be injected here -->
+        </section>
+
+        <section class="samples-section" style="display: none;">
+            <h2>Sample Generated Data (First 5 Rows)</h2>
+            <!-- Table Structure -->
+            <div id="samplesContainer">
+                <table id="samplesTable">
+                    <thead>
+                        <tr>
+                            <th>Lat</th>
+                            <th>Lon</th>
+                            <th>Location ID</th>
+                            <th>Text</th>
+                        </tr>
+                    </thead>
+                    <tbody id="samplesTableBody"></tbody>
+                </table>
+            </div>
+            <!-- Download Buttons -->
+            <div id="downloadButtonsContainer" style="display: none;">
+                 <button id="downloadDataCsvButton" class="download-button">Download Rows (CSV)</button>
+                 <button id="downloadDataJsonButton" class="download-button">Download Rows (JSON)</button>
+                 <button id="downloadAggregatedJsonButton" class="download-button">Download Aggregated (JSON)</button>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        Note: Simulates a basic search repeated multiple times on the same data (first rows, then aggregated). Real systems use indexing. Row exports include Lat, Lon, Location ID, Text. Aggregated export groups by Location ID, concatenating text. Times are in milliseconds (ms).
+    </footer>
+
+    <script>
+        // --- DOM Elements ---
+        const runTestButton = document.getElementById('runTestButton');
+        const resultsDiv = document.getElementById('results');
+        const statusMessageDiv = document.getElementById('statusMessage');
+        const samplesTableBody = document.getElementById('samplesTableBody');
+        const resultsSection = document.querySelector('.results-section');
+        const samplesSection = document.querySelector('.samples-section');
+        const minWordsSlider = document.getElementById('minWords');
+        const maxWordsSlider = document.getElementById('maxWords');
+        const searchRepsSlider = document.getElementById('searchReps');
+        const minWordsOutput = document.getElementById('minWordsOutput');
+        const maxWordsOutput = document.getElementById('maxWordsOutput');
+        const searchRepsOutput = document.getElementById('searchRepsOutput');
+        const downloadButtonsContainer = document.getElementById('downloadButtonsContainer');
+        const downloadDataCsvButton = document.getElementById('downloadDataCsvButton');
+        const downloadDataJsonButton = document.getElementById('downloadDataJsonButton');
+        const downloadAggregatedJsonButton = document.getElementById('downloadAggregatedJsonButton');
+        const numRowsInput = document.getElementById('numRows');
+        const numUniqueLocationsInput = document.getElementById('numUniqueLocations');
+
+        // --- Configuration ---
+        let NUM_ENTRIES = parseInt(numRowsInput.value, 10);
+        let NUM_UNIQUE_LOCATIONS = parseInt(numUniqueLocationsInput.value, 10);
+        const SEARCH_TERM = "social";
+        const VOCABULARY = ["the", "a", "is", "of", "and", "to", "in", "it", "that", "this", "post", "like", "share", "comment", "user", "test", "data", "hello", "world", "quick", "brown", "fox", "jumps", "over", "lazy", "dog", "social", "media", "update", "status", "random", "text", "example", "search", "query", "performance", "entry", "some", "more", "words", "for", "variety", "browser", "javascript", "code", "run", "simple", "algorithm", "benchmark", "performance", "speed", "cpu", "memory", "database", "index", "querying"];
+
+        // --- State Variables ---
+        let generatedData = null; // Stores row-based data
+        let aggregatedGeneratedData = null; // Stores aggregated data
+        let uniqueLocationsData = null; // Store the pre-generated unique locations
+        let currentMinWords = parseInt(minWordsSlider.value, 10);
+        let currentMaxWords = parseInt(maxWordsSlider.value, 10);
+        let currentSearchReps = parseInt(searchRepsSlider.value, 10);
+
+        // --- Slider Logic (unchanged) ---
+        minWordsOutput.textContent = currentMinWords;
+        maxWordsOutput.textContent = currentMaxWords;
+        searchRepsOutput.textContent = currentSearchReps;
+        minWordsSlider.oninput = function() { /* ... */
+            currentMinWords = parseInt(this.value, 10);
+            minWordsOutput.textContent = currentMinWords;
+            if (currentMinWords >= currentMaxWords) {
+                currentMaxWords = currentMinWords + 1;
+                if (currentMaxWords > parseInt(maxWordsSlider.max, 10)) {
+                    currentMaxWords = parseInt(maxWordsSlider.max, 10);
+                    if (currentMinWords >= currentMaxWords) {
+                         currentMinWords = currentMaxWords -1;
+                         this.value = currentMinWords;
+                         minWordsOutput.textContent = currentMinWords;
+                    }
+                }
+                maxWordsSlider.value = currentMaxWords;
+                maxWordsOutput.textContent = currentMaxWords;
+            }
+        };
+        maxWordsSlider.oninput = function() { /* ... */
+            currentMaxWords = parseInt(this.value, 10);
+            maxWordsOutput.textContent = currentMaxWords;
+            if (currentMaxWords <= currentMinWords) {
+                currentMinWords = currentMaxWords - 1;
+                if (currentMinWords < parseInt(minWordsSlider.min, 10)) {
+                    currentMinWords = parseInt(minWordsSlider.min, 10);
+                    if (currentMaxWords <= currentMinWords) {
+                        currentMaxWords = currentMinWords + 1;
+                        this.value = currentMaxWords;
+                        maxWordsOutput.textContent = currentMaxWords;
+                    }
+                }
+                minWordsSlider.value = currentMinWords;
+                minWordsOutput.textContent = currentMinWords;
+            }
+        };
+        searchRepsSlider.oninput = function() { /* ... */
+             currentSearchReps = parseInt(this.value, 10);
+             searchRepsOutput.textContent = currentSearchReps;
+        };
+        numRowsInput.onchange = function() { /* ... */
+             NUM_ENTRIES = parseInt(this.value, 10);
+             if (isNaN(NUM_ENTRIES) || NUM_ENTRIES < 1) {
+                 NUM_ENTRIES = 1; this.value = 1;
+             }
+        };
+        numUniqueLocationsInput.onchange = function() { /* ... */
+            NUM_UNIQUE_LOCATIONS = parseInt(this.value, 10);
+             if (isNaN(NUM_UNIQUE_LOCATIONS) || NUM_UNIQUE_LOCATIONS < 1) {
+                 NUM_UNIQUE_LOCATIONS = 1; this.value = 1;
+             }
+        };
+
+
+        // --- Helper Functions ---
+        function generateRandomText(minWords, maxWords, vocabulary) { /* ... */
+             const actualMin = Math.min(minWords, maxWords);
+             const actualMax = Math.max(minWords, maxWords);
+             const numWords = Math.floor(Math.random() * (actualMax - actualMin + 1)) + actualMin;
+             let text = [];
+             for (let i = 0; i < numWords; i++) {
+                 const randomIndex = Math.floor(Math.random() * vocabulary.length);
+                 text.push(vocabulary[randomIndex]);
+             }
+             return text.join(" ");
+        }
+        function generateRandomLat() { return (Math.random() * 180 - 90).toFixed(5); }
+        function generateRandomLon() { return (Math.random() * 360 - 180).toFixed(5); }
+        function generateRandomLocationId(existingIds = new Set()) { /* ... */
+            let id;
+            do {
+                id = '';
+                for (let i = 0; i < 10; i++) { id += Math.floor(Math.random() * 10); }
+            } while (existingIds.has(id)); // Ensure uniqueness within the pre-generation step
+            return id;
+        }
+        function escapeCsvField(field) { /* ... */
+             if (field === null || field === undefined) { return ''; }
+             const stringField = String(field);
+             if (stringField.includes(',') || stringField.includes('\n') || stringField.includes('"')) {
+                 const escapedField = stringField.replace(/"/g, '""');
+                 return `"${escapedField}"`;
+             }
+             return stringField;
+        }
+
+        // --- Disable/Enable All Download Buttons ---
+        function setDownloadButtonsDisabled(disabled) { /* ... */
+            downloadDataCsvButton.disabled = disabled;
+            downloadDataJsonButton.disabled = disabled;
+            downloadAggregatedJsonButton.disabled = disabled;
+        }
+
+        // --- Data Aggregation Function ---
+        function aggregateDataByLocation(rawData) {
+            if (!rawData || rawData.length === 0) { return []; }
+
+            const aggregatedData = new Map(); // Use a Map for efficient lookup
+            rawData.forEach(item => {
+                if (aggregatedData.has(item.location_id)) {
+                    // Append text if location already exists
+                    const existing = aggregatedData.get(item.location_id);
+                    existing.text += " " + item.text; // Concatenate with a space
+                } else {
+                    // Add new location entry
+                    aggregatedData.set(item.location_id, {
+                        location_id: item.location_id,
+                        lat: item.lat,
+                        lon: item.lon,
+                        text: item.text // Start with the first text encountered
+                    });
+                }
+            });
+            return Array.from(aggregatedData.values()); // Convert Map values to an array
+        }
+
+        // --- Download Function (CSV - Rows) ---
+        function downloadDataAsCsv() { /* ... (unchanged) ... */
+            if (!generatedData || generatedData.length === 0) { alert('No data generated.'); return; }
+            setDownloadButtonsDisabled(true);
+            setTimeout(() => {
+                try {
+                    const csvHeader = "lat,lon,location_id,text\n";
+                    const csvRows = generatedData.map(item => `${item.lat},${item.lon},${item.location_id},${escapeCsvField(item.text)}`);
+                    const csvString = csvHeader + csvRows.join("\n");
+                    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url); link.setAttribute("download", `benchmark_data_rows_${generatedData.length}_entries.csv`);
+                    link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+                } catch (e) { console.error("Error creating CSV download file:", e); alert('Failed to prepare CSV download.'); }
+                finally { setDownloadButtonsDisabled(false); }
+            }, 10);
+        }
+
+        // --- Download Function (JSON - Rows) ---
+        function downloadDataAsJson() { /* ... (unchanged) ... */
+            if (!generatedData || generatedData.length === 0) { alert('No data generated.'); return; }
+            setDownloadButtonsDisabled(true);
+            setTimeout(() => {
+                try {
+                    const jsonString = JSON.stringify(generatedData, null, 2); // Pretty print
+                    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url); link.setAttribute("download", `benchmark_data_rows_${generatedData.length}_entries.json`);
+                    link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+                } catch (e) { console.error("Error creating JSON download file:", e); alert('Failed to prepare JSON download.'); }
+                finally { setDownloadButtonsDisabled(false); }
+            }, 10);
+        }
+
+         // --- Download Function (JSON - Aggregated by Location ID) ---
+        function downloadAggregatedJson() {
+            // Uses the globally stored aggregated data if available, otherwise generates it
+            let dataToDownload = aggregatedGeneratedData; // Try using already aggregated data first
+
+            if (!dataToDownload) {
+                if (!generatedData || generatedData.length === 0) {
+                    alert('No row data generated yet to aggregate.'); return;
+                }
+                 // Aggregate on the fly if needed
+                 statusMessageDiv.innerHTML = '<span class="info">Aggregating data for download...</span>';
+                 setDownloadButtonsDisabled(true);
+                 setTimeout(() => { // Allow UI update
+                    try {
+                        dataToDownload = aggregateDataByLocation(generatedData);
+                         if (!dataToDownload || dataToDownload.length === 0) {
+                            alert('Aggregation resulted in empty data.');
+                            statusMessageDiv.innerHTML = 'Aggregation failed or produced no data.';
+                            setDownloadButtonsDisabled(false);
+                            return;
+                         }
+                         proceedWithAggregatedDownload(dataToDownload);
+                    } catch (e) {
+                        console.error("Error during on-the-fly aggregation for download:", e);
+                        alert('Failed to aggregate data for download.');
+                        statusMessageDiv.innerHTML = '<span class="error">Aggregation for download failed.</span>';
+                        setDownloadButtonsDisabled(false);
+                    }
+                 }, 10);
+                 return; // Exit, download will happen in the timeout callback
+            }
+
+            // Proceed immediately if aggregated data already exists
+            proceedWithAggregatedDownload(dataToDownload);
+        }
+
+        // Helper for the actual aggregated download logic
+        function proceedWithAggregatedDownload(aggregatedArray) {
+             if (!aggregatedArray || aggregatedArray.length === 0) { alert('No aggregated data to download.'); return; }
+             setDownloadButtonsDisabled(true);
+             setTimeout(() => {
+                try {
+                    const jsonString = JSON.stringify(aggregatedArray, null, 2); // Pretty print
+                    const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `benchmark_data_aggregated_${aggregatedArray.length}_locations.json`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    // Reset status only if it was changed for on-the-fly aggregation
+                    if (statusMessageDiv.textContent.includes('Aggregating data for download')) {
+                       statusMessageDiv.innerHTML = "Benchmark complete.";
+                    }
+                } catch (e) {
+                    console.error("Error creating aggregated JSON download file:", e);
+                    alert('Failed to prepare aggregated JSON download.');
+                } finally {
+                    setDownloadButtonsDisabled(false);
+                }
+            }, 10); // Short timeout for consistency
+        }
+
+
+        // --- Main Benchmark Function ---
+        function runBenchmark() {
+            // --- UI Updates Start ---
+            generatedData = null; // Clear previous data
+            aggregatedGeneratedData = null; // Clear previous aggregated data
+            uniqueLocationsData = null;
+            resultsDiv.innerHTML = '';
+            samplesTableBody.innerHTML = '';
+            resultsSection.style.display = 'none';
+            samplesSection.style.display = 'none';
+            downloadButtonsContainer.style.display = 'none';
+            setDownloadButtonsDisabled(true);
+            statusMessageDiv.innerHTML = '<span class="info">Running benchmark... Please wait (UI may freeze).</span>';
+            runTestButton.disabled = true;
+            minWordsSlider.disabled = true;
+            maxWordsSlider.disabled = true;
+            searchRepsSlider.disabled = true;
+            numRowsInput.disabled = true;
+            numUniqueLocationsInput.disabled = true;
+
+            setTimeout(() => {
+                // --- Benchmark Variables ---
+                let dataBuffer = [];
+                let actualNumEntries = 0;
+                let actualUniqueLocations = 0;
+                let generationDuration = 0;
+                let generationError = null;
+                let aggregationDuration = 0;
+                let aggregationError = null;
+                const searchTermLower = SEARCH_TERM.toLowerCase();
+                const reps = currentSearchReps;
+
+                // Row search results
+                let searchDurations = [];
+                let totalSearchTime = 0;
+                let minSearchTime = Infinity;
+                let maxSearchTime = 0;
+                let avgSearchTime = 0;
+                let totalMatchesFound = 0;
+
+                // Aggregated search results
+                let aggregatedSearchDurations = [];
+                let totalAggregatedSearchTime = 0;
+                let minAggregatedSearchTime = Infinity;
+                let maxAggregatedSearchTime = 0;
+                let avgAggregatedSearchTime = 0;
+                let totalAggregatedMatchesFound = 0;
+                let actualAggregatedCount = 0;
+
+
+                // --- Read Config ---
+                const minW = currentMinWords;
+                const maxW = currentMaxWords;
+                NUM_ENTRIES = parseInt(numRowsInput.value, 10);
+                NUM_UNIQUE_LOCATIONS = parseInt(numUniqueLocationsInput.value, 10);
+
+                 // Validate NUM_UNIQUE_LOCATIONS
+                 if (isNaN(NUM_UNIQUE_LOCATIONS) || NUM_UNIQUE_LOCATIONS < 1) {
+                     NUM_UNIQUE_LOCATIONS = 1;
+                     numUniqueLocationsInput.value = 1;
+                 }
+                 if (NUM_UNIQUE_LOCATIONS > NUM_ENTRIES) {
+                    console.warn("Number of unique locations cannot exceed total rows. Using total rows as unique count.");
+                    NUM_UNIQUE_LOCATIONS = NUM_ENTRIES;
+                    numUniqueLocationsInput.value = NUM_UNIQUE_LOCATIONS;
+                 }
+
+                // --- Generation Phase ---
+                 statusMessageDiv.innerHTML = '<span class="info">Generating data...</span>';
+                try {
+                    const genStartTime = performance.now();
+                    const tempUniqueLocations = [];
+                    const generatedIds = new Set();
+                    for (let i = 0; i < NUM_UNIQUE_LOCATIONS; i++) {
+                        const id = generateRandomLocationId(generatedIds);
+                        generatedIds.add(id);
+                        tempUniqueLocations.push({
+                            location_id: id,
+                            lat: generateRandomLat(),
+                            lon: generateRandomLon()
+                        });
+                    }
+                    uniqueLocationsData = tempUniqueLocations;
+                    actualUniqueLocations = uniqueLocationsData.length;
+
+                    for (let i = 0; i < NUM_ENTRIES; i++) {
+                        const locationIndex = i % actualUniqueLocations;
+                        const selectedLocation = uniqueLocationsData[locationIndex];
+                        dataBuffer.push({
+                            lat: selectedLocation.lat,
+                            lon: selectedLocation.lon,
+                            location_id: selectedLocation.location_id,
+                            text: generateRandomText(minW, maxW, VOCABULARY)
+                        });
+                    }
+                    actualNumEntries = dataBuffer.length;
+                    generatedData = dataBuffer;
+                    const genEndTime = performance.now();
+                    generationDuration = genEndTime - genStartTime;
+
+                    // Display samples & Show/Enable Download Buttons
+                    if (actualNumEntries > 0) {
+                         samplesSection.style.display = 'block';
+                         const sampleCount = Math.min(5, actualNumEntries);
+                         samplesTableBody.innerHTML = ''; // Clear previous samples
+                         for(let i = 0; i < sampleCount; i++) {
+                             const item = generatedData[i];
+                             const row = samplesTableBody.insertRow();
+                             row.insertCell(0).textContent = item.lat;
+                             row.insertCell(1).textContent = item.lon;
+                             row.insertCell(2).textContent = item.location_id;
+                             row.insertCell(3).textContent = item.text;
+                         }
+                         downloadButtonsContainer.style.display = 'block';
+                         // Don't enable download buttons yet, wait until full benchmark is done
+                     }
+
+                } catch (e) {
+                    generationError = e;
+                    console.error("Error during data generation:", e);
+                    actualNumEntries = dataBuffer.length;
+                    generatedData = dataBuffer; // Keep partially generated data if any
+                    actualUniqueLocations = uniqueLocationsData ? uniqueLocationsData.length : 0;
+
+                    // Handle fatal generation error
+                    if (actualNumEntries === 0) {
+                         resultsSection.style.display = 'block';
+                         resultsDiv.innerHTML = `<p class="error"><strong>Error:</strong> Failed to generate any data.</p><p>Details: ${e.message}</p>`;
+                         statusMessageDiv.innerHTML = '<span class="error">Benchmark failed: No data generated.</span>';
+                         runTestButton.disabled = false; minWordsSlider.disabled = false; maxWordsSlider.disabled = false; searchRepsSlider.disabled = false; numRowsInput.disabled = false; numUniqueLocationsInput.disabled = false;
+                         generatedData = null; aggregatedGeneratedData = null; uniqueLocationsData = null;
+                         return; // Stop benchmark
+                    }
+                    // If partial data exists, continue but note the error
+                    samplesSection.style.display = 'block'; // Show partial samples
+                     const sampleCount = Math.min(5, actualNumEntries);
+                     samplesTableBody.innerHTML = '';
+                     for(let i = 0; i < sampleCount; i++) { /* ... add rows ... */
+                        const item = generatedData[i]; const row = samplesTableBody.insertRow();
+                        row.insertCell(0).textContent = item.lat; row.insertCell(1).textContent = item.lon; row.insertCell(2).textContent = item.location_id; row.insertCell(3).textContent = item.text;
+                     }
+                     downloadButtonsContainer.style.display = 'block';
+                }
+
+
+                // --- Row-Based Search Phase ---
+                if (actualNumEntries > 0) {
+                    statusMessageDiv.innerHTML = '<span class="info">Running search on row data...</span>';
+                    totalSearchTime = 0; searchDurations = []; minSearchTime = Infinity; maxSearchTime = 0;
+
+                    for (let run = 0; run < reps; run++) {
+                        let matchCount = 0;
+                        const searchStartTime = performance.now();
+                        for (let i = 0; i < actualNumEntries; i++) {
+                            // Check if text exists and includes the term (robustness)
+                            if (generatedData[i] && generatedData[i].text && generatedData[i].text.toLowerCase().includes(searchTermLower)) {
+                                matchCount++;
+                            }
+                        }
+                        const searchEndTime = performance.now();
+                        const duration = searchEndTime - searchStartTime;
+                        searchDurations.push(duration);
+                        totalSearchTime += duration;
+                        minSearchTime = Math.min(minSearchTime, duration);
+                        maxSearchTime = Math.max(maxSearchTime, duration);
+                        if (run === 0) { totalMatchesFound = matchCount; }
+                    }
+                    if (reps > 0) { avgSearchTime = totalSearchTime / reps; }
+                     else { avgSearchTime = 0; minSearchTime = 0; maxSearchTime = 0; }
+                }
+
+
+                // --- Aggregation Phase ---
+                if (actualNumEntries > 0 && !generationError) { // Don't aggregate if generation failed completely
+                     statusMessageDiv.innerHTML = '<span class="info">Aggregating data...</span>';
+                     try {
+                        const aggStartTime = performance.now();
+                        aggregatedGeneratedData = aggregateDataByLocation(generatedData);
+                        const aggEndTime = performance.now();
+                        aggregationDuration = aggEndTime - aggStartTime;
+                        actualAggregatedCount = aggregatedGeneratedData.length;
+                     } catch(e) {
+                        aggregationError = e;
+                        console.error("Error during data aggregation:", e);
+                        aggregatedGeneratedData = null; // Ensure it's null if aggregation failed
+                        actualAggregatedCount = 0;
+                     }
+                }
+
+
+                // --- Aggregated Search Phase ---
+                if (aggregatedGeneratedData && aggregatedGeneratedData.length > 0) {
+                    statusMessageDiv.innerHTML = '<span class="info">Running search on aggregated data...</span>';
+                    totalAggregatedSearchTime = 0; aggregatedSearchDurations = []; minAggregatedSearchTime = Infinity; maxAggregatedSearchTime = 0;
+
+                    for (let run = 0; run < reps; run++) {
+                        let aggMatchCount = 0;
+                        const aggSearchStartTime = performance.now();
+                        for (let i = 0; i < actualAggregatedCount; i++) {
+                            // Check if text exists and includes the term
+                            if (aggregatedGeneratedData[i] && aggregatedGeneratedData[i].text && aggregatedGeneratedData[i].text.toLowerCase().includes(searchTermLower)) {
+                                aggMatchCount++;
+                            }
+                        }
+                        const aggSearchEndTime = performance.now();
+                        const duration = aggSearchEndTime - aggSearchStartTime;
+                        aggregatedSearchDurations.push(duration);
+                        totalAggregatedSearchTime += duration;
+                        minAggregatedSearchTime = Math.min(minAggregatedSearchTime, duration);
+                        maxAggregatedSearchTime = Math.max(maxAggregatedSearchTime, duration);
+                        if (run === 0) { totalAggregatedMatchesFound = aggMatchCount; }
+                    }
+                     if (reps > 0) { avgAggregatedSearchTime = totalAggregatedSearchTime / reps; }
+                     else { avgAggregatedSearchTime = 0; minAggregatedSearchTime = 0; maxAggregatedSearchTime = 0; }
+                }
+
+                // --- Display Results ---
+                statusMessageDiv.innerHTML = "Benchmark complete.";
+                resultsSection.style.display = 'block';
+                resultsDiv.innerHTML = `
+                    <p><strong>Target Rows (Configured):</strong> ${NUM_ENTRIES.toLocaleString()}</p>
+                    <p><strong>Target Unique Locations:</strong> ${parseInt(numUniqueLocationsInput.value, 10).toLocaleString()}</p>
+                    <p><strong>Actual Rows Generated:</strong> ${actualNumEntries.toLocaleString()}</p>
+                    <p><strong>Actual Unique Locations:</strong> ${actualUniqueLocations.toLocaleString()}</p>
+                    <p><strong>Text Word Count Range:</strong> ${minW} - ${maxW}</p>
+                    <p><strong>Searched Term (in text):</strong> "${SEARCH_TERM}"</p>
+                    <p><strong>Search Repetitions:</strong> ${reps}</p>
+                    <hr style="margin: 1rem 0;">
+                    <p><strong>Data Generation Time:</strong> ${generationDuration.toFixed(2)} ms ${generationError ? `<span class="error">(Halted early: ${generationError.message})</span>` : ''}</p>
+                    <p><strong>Data Aggregation Time:</strong> ${aggregationDuration.toFixed(2)} ms ${aggregationError ? `<span class="error">(Failed: ${aggregationError.message})</span>` : `(${actualAggregatedCount.toLocaleString()} aggregated items)`}</p>
+
+                    <h3>Row-Based Search Results</h3>
+                    ${actualNumEntries > 0 ? `
+                        <p><strong>Total Row Search Time (${reps} runs):</strong> ${totalSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Average Row Search Time:</strong> ${avgSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Min Row Search Time:</strong> ${minSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Max Row Search Time:</strong> ${maxSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Matches Found (per run):</strong> ${totalMatchesFound.toLocaleString()}</p>
+                    ` : `
+                        <p><strong>Row Search:</strong> N/A (No data or generation failed)</p>
+                    `}
+
+                    <h3>Aggregated Search Results</h3>
+                     ${actualAggregatedCount > 0 ? `
+                        <p><strong>Total Aggregated Search Time (${reps} runs):</strong> ${totalAggregatedSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Average Aggregated Search Time:</strong> ${avgAggregatedSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Min Aggregated Search Time:</strong> ${minAggregatedSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Max Aggregated Search Time:</strong> ${maxAggregatedSearchTime.toFixed(2)} ms</p>
+                        <p><strong>Matches Found (per run):</strong> ${totalAggregatedMatchesFound.toLocaleString()}</p>
+                    ` : `
+                        <p><strong>Aggregated Search:</strong> N/A ${aggregationError ? '(Aggregation failed)' : '(No data aggregated)'}</p>
+                    `}
+                `;
+
+                // --- UI Updates End ---
+                runTestButton.disabled = false;
+                minWordsSlider.disabled = false;
+                maxWordsSlider.disabled = false;
+                searchRepsSlider.disabled = false;
+                numRowsInput.disabled = false;
+                numUniqueLocationsInput.disabled = false;
+                setDownloadButtonsDisabled(false); // Enable download buttons now
+
+            }, 50); // Timeout allows initial UI updates
+        }
+
+        // --- Attach Event Listeners ---
+        runTestButton.addEventListener('click', runBenchmark);
+        downloadDataCsvButton.addEventListener('click', downloadDataAsCsv);
+        downloadDataJsonButton.addEventListener('click', downloadDataAsJson);
+        downloadAggregatedJsonButton.addEventListener('click', downloadAggregatedJson);
+
+    </script>
+
+</body>
+</html>
