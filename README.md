@@ -25,15 +25,17 @@ Scripts for data processing can be found here:
 See the screenshots folder for query comparisons between the location-averaged and individual embedding indice.
 
 ## Performance 
+### File size
+See the data directory for comparison: https://github.com/do-me/semantic-hexbins/tree/main/data
 
+### Speed
 Tested devices: 
-
 - Windows laptop with Intel i7-8550 CPU
 - Ubuntu laptop with AMD Ryzen 7 PRO 6850U
 - Android phone Samsung S9 with Exynos 9810
 - Apple iPhone 15 Pro with A17 Pro
 
-Run times for a full layer update are significantly below 200ms with ~60ms inferencing time. Iphone 15 Pro averages 51ms (24ms for inferencing), averaged for 100 runs.
+Run times for a full layer update are significantly below 200ms with ~60ms inferencing time. Iphone 15 Pro averages around 54ms (33ms for inferencing) for 100 runs.
 
 For comparison to a simple full-text search (GFTS) in JS see this app: https://do-me.github.io/semantic-hexbins/full_text_search_benchmark/. It benchmarks dummy data in social media style with 4 columns: lat, lon, location ID and text.
 
