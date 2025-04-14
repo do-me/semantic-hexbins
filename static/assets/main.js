@@ -200,7 +200,7 @@ $(document).ready(function () {
     async function computeQueryEmbedding() {
         let inputQuery = $("#queryText").val()
         let modelExecTimeStartTime = performance.now();
-        // https://huggingface.co/intfloat/multilingual-e5-small#faq needs "query: " for better performance
+        // https://huggingface.co/xenova/multilingual-e5-small#faq needs "query: " for better performance
         queryEmbedding = await pipe("query: " + inputQuery, { pooling: 'mean', normalize: false });
         modelExecTime = performance.now() - modelExecTimeStartTime;
 
