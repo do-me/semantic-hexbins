@@ -1,7 +1,7 @@
 # Semantic Hexbins
 
 A light-weight demo app and processing scripts for geospatial semantic search. Designed for any kind of textual data with geospatial references.
-Repository for the paper: XXX (still to submit)
+Repository for the Springer paper: [Embedding-Based Multilingual Semantic Search for Geo-Textual Data in Urban Studies](https://link.springer.com/article/10.1007/s41651-025-00232-5)
 
 ![](screenshot_overview.png)
 
